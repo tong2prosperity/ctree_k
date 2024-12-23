@@ -14,16 +14,15 @@ pub struct LocalWindow {
     window: winit::window::Window,
     pixels: Pixels,
     id: winit::window::WindowId,
-    ms: MultiSender<TransferMsg>,
     win_rgba_rx: Receiver<TransferMsg>,
     encoder_start_working: bool,
     ev_loop: EventLoop<()>,
 }
 
 impl LocalWindow {
-    pub fn new(window: winit::window::Window, pixels: Pixels, id: winit::window::WindowId, ms: MultiSender<TransferMsg>, win_rgba_rx: Receiver<TransferMsg>,
+    pub fn new(window: winit::window::Window, pixels: Pixels, id: winit::window::WindowId, win_rgba_rx: Receiver<TransferMsg>,
                ev_loop: EventLoop<()>) -> Self {
-        Self { window, pixels, id, ms, win_rgba_rx, encoder_start_working: false, ev_loop }
+        Self { window, pixels, id, win_rgba_rx, encoder_start_working: false, ev_loop }
     }
 
     pub fn run(mut self) {
@@ -50,15 +49,6 @@ impl LocalWindow {
                 TransferMsg::RenderedData(rgba) => {
                     self.pixels.get_frame_mut().copy_from_slice(&rgba);
                     self.pixels.render().expect("should render success");
-                    if self.encoder_start_working {
-                        self.ms.enc.try_send(TransferMsg::RenderedData(rgba)).unwrap();
-                    }
-                }
-                TransferMsg::DogOpt(op) => {
-                    if op == DognutOption::EncoderStarted {
-                        self.encoder_start_working = true;
-                        info!("start send rgba to encoder");
-                    }
                 }
                 TransferMsg::QuitThread => {
                     *control_flow = winit::event_loop::ControlFlow::Exit;
@@ -76,7 +66,7 @@ impl LocalWindow {
 }
 
 
-pub fn start(win_rgba_rx: Receiver<TransferMsg>, ms: MultiSender<TransferMsg>) {
+pub fn start(win_rgba_rx: Receiver<TransferMsg>) {
     let event_loop = EventLoop::new();
 
     let window = {
@@ -101,6 +91,6 @@ pub fn start(win_rgba_rx: Receiver<TransferMsg>, ms: MultiSender<TransferMsg>) {
         Pixels::new(WIDTH, HEIGHT, surface_texture).unwrap()
     };
     pixels.set_clear_color(Color::WHITE);
-    let lw = LocalWindow::new(window, pixels, id, ms, win_rgba_rx, event_loop);
+    let lw = LocalWindow::new(window, pixels, id, win_rgba_rx, event_loop);
     lw.run();
 }

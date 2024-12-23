@@ -98,7 +98,10 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
         // The instance is a handle to our GPU
         // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
         log::warn!("WGPU setup");
-        let instance = wgpu::Instance::new(wgpu::Backends::all());
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::all(),
+            ..Default::default()
+        });
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::default(),
@@ -327,10 +330,9 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
     pub fn input(&mut self, event: &DeviceEvent) -> bool {
         match event {
             DeviceEvent::Key(
-                KeyboardInput {
-                    virtual_keycode: Some(key),
-                    state,
-                    ..
+                RawKeyEvent {
+                    physical_key: key,
+                    state
                 }
             ) => self.camera_controller.process_keyboard(*key, *state),
             DeviceEvent::MouseWheel { delta, .. } => {
@@ -435,8 +437,8 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
                 buffer: &output_buffer,
                 layout: wgpu::ImageDataLayout {
                     offset: 0,
-                    bytes_per_row: NonZeroU32::new(u32_size * self.size.width),
-                    rows_per_image: NonZeroU32::new(self.size.height),
+                    bytes_per_row: Some(u32_size * self.size.width),
+                    rows_per_image: Some(self.size.height),
                 },
             },
             texture_desc.size,
@@ -458,8 +460,8 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
                     buffer: &tui_output_buffer,
                     layout: wgpu::ImageDataLayout {
                         offset: 0,
-                        bytes_per_row: NonZeroU32::new(u32_size * self.tui_size.0),
-                        rows_per_image: NonZeroU32::new(self.tui_size.1),
+                        bytes_per_row: Some(u32_size * self.tui_size.0),
+                            rows_per_image: Some(self.tui_size.1),
                     },
                 },
                 tui_desc.size,

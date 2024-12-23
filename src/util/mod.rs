@@ -10,11 +10,11 @@ use lazy_static::lazy_static;
 #[command(author, version, about)]
 pub struct Args {
     /// whether use gpu or cpu simulated renderer.
-    #[arg(short, long, default_value_t=false)]
+    #[arg(short, long, default_value_t=true)]
     pub use_gpu: bool,
 
     /// gui or terminal mode
-    #[arg(short, long, default_value_t=false)]
+    #[arg(short, long, default_value_t=true)]
     pub term: bool,
 
     #[arg(short, long, default_value_t=false)]

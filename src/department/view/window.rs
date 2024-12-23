@@ -8,9 +8,10 @@ use log::{error, info};
 use pixels::{Error, Pixels, SurfaceTexture};
 use pixels::wgpu::Color;
 use winit::dpi::{LogicalSize};
-use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, Event, KeyEvent, WindowEvent};
 use winit::event_loop::{EventLoop};
-use winit::window::WindowBuilder;
+use winit::keyboard::{Key, NamedKey};
+use winit::window::Window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 
 use crate::department::types::msg::{TransferMsg, DognutOption};
@@ -32,7 +33,7 @@ pub async fn run(win_receiver: crossbeam_channel::Receiver<TransferMsg>, ms: Mul
     let camera = self_type::camera_instance(setting_width, HEIGHT);
     let state = State::new(LogicalSize { width: setting_width, height: HEIGHT }, camera).await;
 
-    let event_loop = EventLoop::new();
+    let event_loop = EventLoop::new().unwrap();
     let _input = WinitInputHelper::new();
     let window = {
         let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
@@ -55,7 +56,7 @@ pub async fn run(win_receiver: crossbeam_channel::Receiver<TransferMsg>, ms: Mul
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
         Pixels::new(WIDTH, HEIGHT, surface_texture)?
     };
-    pixels.set_clear_color(Color::WHITE);
+    pixels.clear_color(Color::WHITE);
     let game = Game::new(pixels, state, id, false);
 
     let mut start_enc_render = false;
@@ -81,7 +82,7 @@ pub async fn run(win_receiver: crossbeam_channel::Receiver<TransferMsg>, ms: Mul
             let out = g.game.state.render(false);
             if split {
                let (this, that) = crate::util::split_screen(&out.0, (WHOLE_WIDTH, HEIGHT), (WIDTH, HEIGHT));
-                g.game.pixels.get_frame_mut().copy_from_slice(&that.as_slice());
+                pixels.frame_mut().copy_from_slice(&that.as_slice());
                 if start_enc_render {
                     if let Err(e) = ms.enc.try_send(TransferMsg::RenderedData(this)) {
                         error!("send raw rgba fail: reason {:?}", e);
@@ -90,7 +91,7 @@ pub async fn run(win_receiver: crossbeam_channel::Receiver<TransferMsg>, ms: Mul
                     index += 1;
                 }
             }else {
-                g.game.pixels.get_frame_mut().copy_from_slice(&out.0.as_slice());
+                pixels.frame_mut().copy_from_slice(&out.0.as_slice());
                 if start_enc_render {
                     if let Err(e) = ms.enc.try_send(TransferMsg::RenderedData(out.0)) {
                         error!("send raw rgba fail: reason {:?}", e);
@@ -105,7 +106,7 @@ pub async fn run(win_receiver: crossbeam_channel::Receiver<TransferMsg>, ms: Mul
 
 
 
-            if let Err(err) = g.game.pixels.render() {
+            if let Err(err) = pixels.render() {
                 error!("pixels.render() failed: {err}");
                 g.exit();
             }
@@ -120,13 +121,17 @@ pub async fn run(win_receiver: crossbeam_channel::Receiver<TransferMsg>, ms: Mul
                 Event::NewEvents(_) => {}
                 Event::WindowEvent { ref event, .. } => {
                     match event {
-                        WindowEvent::CloseRequested | WindowEvent::KeyboardInput {
-                            input:
-                            KeyboardInput {
+                        WindowEvent::CloseRequested => {
+                            g.exit();
+                            return;
+                        }
+                        WindowEvent::KeyboardInput { 
+                            event: KeyEvent {
+                                logical_key: Key::Named(NamedKey::Escape),
                                 state: ElementState::Pressed,
-                                virtual_keycode: Some(VirtualKeyCode::Escape),
                                 ..
-                            }, ..
+                            },
+                            ..
                         } => {
                             g.exit();
                             return;
@@ -135,19 +140,12 @@ pub async fn run(win_receiver: crossbeam_channel::Receiver<TransferMsg>, ms: Mul
                             g.game.state.resize(*physical_size, scale_factor);
                             g.game.pixels.resize_surface(physical_size.width, physical_size.height);
                         }
-                        WindowEvent::ScaleFactorChanged {scale_factor, new_inner_size } => {
-                            g.game.state.resize(**new_inner_size, *scale_factor);
-                            g.game.pixels.resize_surface(new_inner_size.width, new_inner_size.height);
+                        WindowEvent::ScaleFactorChanged { scale_factor: new_scale_factor, inner_size_writer } => {
+                            g.game.state.resize(*inner_size_writer, *new_scale_factor);
+                            g.game.pixels.resize_surface(inner_size_writer.width, inner_size_writer.height)?;
                         }
-                        WindowEvent::KeyboardInput { input, .. } => {
-                            let ret = g.game.state.camera_controller.process_keyboard(input.virtual_keycode.unwrap(), input.state);
-                            if !ret {
-                                g.exit();
-                                return;
-                            }
-                        }
-                        WindowEvent::ModifiersChanged(ms) => {
-                            g.game.state.camera_controller.ctrl_pressed = ms.ctrl();
+                        WindowEvent::ModifiersChanged(state) => {
+                            g.game.state.camera_controller.ctrl_pressed = state.control_key();
                         }
                         _ => {}
                     }
@@ -155,7 +153,7 @@ pub async fn run(win_receiver: crossbeam_channel::Receiver<TransferMsg>, ms: Mul
                 Event::DeviceEvent {  .. } => {
                     //g.game.state.input(event);
                 }
-                Event::RedrawRequested(_) => {
+                Event::RedrawRequest(_) => {
                     //g.game.pixels.window_pos_to_pixel()
                 }
                 _ => {}

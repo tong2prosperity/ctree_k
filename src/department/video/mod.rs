@@ -100,7 +100,7 @@ impl ImgEncoder {
     fn encode_vid_packet(&self, data: Vec<u8>) -> crate::pb::avpacket::VideoPacket {
         let mut out = Vec::new();
         image::codecs::jpeg::JpegEncoder::new_with_quality(&mut out, 50)
-            .encode(data.as_slice(), self.dimension.0, self.dimension.1, image::ColorType::Rgba8)
+            .encode(data.as_slice(), self.dimension.0, self.dimension.1, image::ExtendedColorType::Rgba8)
             .expect("encode image failed");
 
         let mut vid_packet = crate::pb::avpacket::VideoPacket::new();

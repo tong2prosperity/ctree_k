@@ -24,6 +24,7 @@ impl Texture {
             height: size.1,
             depth_or_array_layers: 1,
         };
+        let view_formats = [Self::DEPTH_FORMAT];
         let desc = wgpu::TextureDescriptor {
             label: Some(label),
             size,
@@ -32,6 +33,7 @@ impl Texture {
             dimension: wgpu::TextureDimension::D2,
             format: Self::DEPTH_FORMAT,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &view_formats,
         };
         let texture = device.create_texture(&desc);
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
@@ -86,6 +88,7 @@ impl Texture {
             height: dimensions.1,
             depth_or_array_layers: 1,
         };
+        let view_formats = [wgpu::TextureFormat::Rgba8UnormSrgb];
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label,
             size,
@@ -94,6 +97,7 @@ impl Texture {
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Rgba8UnormSrgb,
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &view_formats,
         });
 
         queue.write_texture(
@@ -106,8 +110,8 @@ impl Texture {
             &rgba,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: NonZeroU32::new(4 * dimensions.0),
-                rows_per_image: NonZeroU32::new(dimensions.1),
+                bytes_per_row: Some(4 * dimensions.0),
+                rows_per_image: Some(dimensions.1),
             },
             size,
         );

@@ -27,18 +27,18 @@ fn main() {
 
     log::info!(target:"wgpu_core", "hello");
 
-    let (net_sender, net_receiver) = crossbeam_channel::unbounded::<msg::TransferMsg>();
+    //let (net_sender, net_receiver) = crossbeam_channel::unbounded::<msg::TransferMsg>();
     let (win_sender, win_receiver) = crossbeam_channel::unbounded::<msg::TransferMsg>();
     let (enc_sender, enc_receiver) = crossbeam_channel::unbounded::<msg::TransferMsg>();
 
     let ms = MultiSender::new(net_sender, enc_sender, win_sender);
 
-    router::Router::new(net_receiver, ms.clone()).run();
-    #[cfg(feature = "rtc")]
-    RgbaEncoder::run(enc_receiver, ms.clone(), (WIDTH, HEIGHT));
+    //router::Router::new(net_receiver, ms.clone()).run();
+    //#[cfg(feature = "rtc")]
+    //RgbaEncoder::run(enc_receiver, ms.clone(), (WIDTH, HEIGHT));
 
-    #[cfg(feature = "image_encoder")]
-    ImgEncoder::run(enc_receiver, ms.clone(), ( if arg.term { 256} else {WIDTH}, if arg.term {79} else {HEIGHT}));
+    //#[cfg(feature = "image_encoder")]
+    //ImgEncoder::run(enc_receiver, ms.clone(), ( if arg.term { 256} else {WIDTH}, if arg.term {79} else {HEIGHT}));
 
     if arg.term {
         let tui_ms = ms.clone();
@@ -77,7 +77,7 @@ fn main() {
                 });
             }).unwrap();
 
-            dognut::department::view::local_window::start(win_receiver, ms);
+            dognut::department::view::local_window::start(win_receiver);
             return;
         }
     } else {
