@@ -35,7 +35,7 @@ protobuf = "=3.2.0"
 
 tokio = { version = "1", features = ["full"] }
 dognut_macros = { path = "../dognut_macros" }
-
+rand = "0.8"
 
 log4rs = "1.2.0"
 lazy_static = "*"

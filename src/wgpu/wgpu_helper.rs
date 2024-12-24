@@ -243,21 +243,6 @@ where
             )
         };
 
-        let snow_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Snow Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../res/shaders/snow.wgsl").into()),
-        });
-
-        let snow_render_pipeline = create_render_pipeline(
-            &device,
-            &render_pipeline_layout,
-            wgpu::TextureFormat::Rgba8UnormSrgb,
-            Some(texture::Texture::DEPTH_FORMAT),
-            &[SnowflakeVertex::desc(), SnowflakeInstance::desc()],
-            snow_shader,
-            "snow_render_pipeline",
-        );
-
         let snowfall_system = SnowfallSystem::new(&device, 1000); // 1000个雪花
 
         Self {
@@ -575,9 +560,8 @@ where
                 //&self.light_bind_group,
             );
 
-            self.snowfall_system
-                .render(&mut render_pass, &self.camera_bind_group);
         }
+        self.snowfall_system.render(encoder, &view, &self.depth_texture.view, &self.camera_bind_group);
         (texture_desc, texture)
     }
 }
