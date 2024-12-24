@@ -1,10 +1,10 @@
 use std::io::Stdout;
 use std::path::Path;
 
-use crossterm::{queue, style};
 use crossterm::cursor::MoveTo;
 use crossterm::style::Color;
 use crossterm::style::Stylize;
+use crossterm::{queue, style};
 use image;
 use image::{ImageFormat, RgbaImage};
 use log::error;
@@ -35,11 +35,12 @@ impl<'a> OutputBuffer<'a> {
         _display.resize(pixels_num * RGB_STEP, 0);
 
         Self {
-            width, height,
+            width,
+            height,
             display: _display,
             depth: _depth,
             tui,
-            stdout: None
+            stdout: None,
         }
     }
 
@@ -60,30 +61,50 @@ impl<'a> OutputBuffer<'a> {
     }
 
     pub fn pos_to_pixel(&self, x: f32, y: f32) -> (f32, f32) {
-        (self.width as f32 / 2. * (x + 1.), self.height as f32 / 2. * (1. - y))
+        (
+            self.width as f32 / 2. * (x + 1.),
+            self.height as f32 / 2. * (1. - y),
+        )
     }
 
-    pub fn to_view_port_matrix(&self) -> Matrix<4, 4>{
+    pub fn to_view_port_matrix(&self) -> Matrix<4, 4> {
         let half_width = self.width as f32 / 2.;
         let half_height = self.height as f32 / 2.;
         Matrix::<4, 4>::from_vec(vec![
-            half_width, 0., 0., 0.,
-            0., -half_height, 0., 0.,
-            0., 0., 1., 0.,
-            half_width, half_height, 0., 1.,
+            half_width,
+            0.,
+            0.,
+            0.,
+            0.,
+            -half_height,
+            0.,
+            0.,
+            0.,
+            0.,
+            1.,
+            0.,
+            half_width,
+            half_height,
+            0.,
+            1.,
         ])
     }
 
-    pub fn pos_to_pixel_pos(&self, pos: &Pos3) -> Pos3{
-        let (x, y) = (self.width as f32 / 2. * (pos.x() + 1.), self.height as f32 / 2. * (1. - pos.y()));
+    pub fn pos_to_pixel_pos(&self, pos: &Pos3) -> Pos3 {
+        let (x, y) = (
+            self.width as f32 / 2. * (pos.x() + 1.),
+            self.height as f32 / 2. * (1. - pos.y()),
+        );
         Pos3::from_xyz(x, y, 0.)
     }
 
-    pub fn pos_to_pixel_pos_with_z(&self, pos: &Pos3) -> Pos3{
-        let (x, y) = (self.width as f32 / 2. * (pos.x() + 1.), self.height as f32 / 2. * (1. - pos.y()));
-        Pos3::from_xyz(x,y,pos.z())
+    pub fn pos_to_pixel_pos_with_z(&self, pos: &Pos3) -> Pos3 {
+        let (x, y) = (
+            self.width as f32 / 2. * (pos.x() + 1.),
+            self.height as f32 / 2. * (1. - pos.y()),
+        );
+        Pos3::from_xyz(x, y, pos.z())
     }
-
 
     pub fn save_to_image(&self, path: &str) {
         let mut img = RgbaImage::new(self.width, self.height);
@@ -96,11 +117,11 @@ impl<'a> OutputBuffer<'a> {
 
     pub fn queue_to_stdout(&mut self) {
         if self.stdout.is_none() {
-            return ;
+            return;
         }
         let mut stdout = self.stdout.unwrap();
         let (mut x, mut y) = (0, 0);
-        for (n, [r,g,b,c]) in self.display.iter().array_chunks().enumerate() {
+        for (n, [r, g, b, c]) in self.display.iter().array_chunks().enumerate() {
             if *c as u8 == 0 {
                 continue;
             }
@@ -108,7 +129,14 @@ impl<'a> OutputBuffer<'a> {
             x = n % self.width as usize;
             y = n / self.width as usize;
             queue!(stdout, MoveTo(x as u16, y as u16));
-            queue!(stdout, style::PrintStyledContent(('•' as char).with(Color::Rgb {r:*r ,g: *g, b:*b})));
+            queue!(
+                stdout,
+                style::PrintStyledContent(('*' as char).with(Color::Rgb {
+                    r: *r,
+                    g: *g,
+                    b: *b
+                }))
+            );
         }
     }
 }

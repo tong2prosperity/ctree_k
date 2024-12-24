@@ -5,6 +5,7 @@ pub mod wgpu_helper;
 pub mod instance;
 mod light;
 pub mod camera;
+pub mod snow_flake;
 
 pub struct Runner{}
 

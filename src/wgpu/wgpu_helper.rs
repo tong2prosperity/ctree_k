@@ -6,12 +6,15 @@ use pixels::wgpu::util::DeviceExt;
 use winit::event::*;
 
 use crate::department::view::camera_trait;
+use crate::wgpu::snow_flake::SnowflakeInstance;
+use crate::wgpu::snow_flake::SnowflakeVertex;
 use log::info;
 use std::time::Duration;
 use winit::dpi::{LogicalSize, PhysicalSize};
 
 use super::model;
 use super::resources;
+use super::snow_flake::SnowfallSystem;
 use super::texture;
 
 use model::{DrawModel, Vertex};
@@ -70,13 +73,9 @@ where
     depth_texture: texture::Texture,
     tui_depth_texture: texture::Texture,
     size: LogicalSize<u32>,
-    //light_uniform: LightUniform,
-    //light_buffer: wgpu::Buffer,
-    //light_bind_group: wgpu::BindGroup,
-    //    light_render_pipeline: wgpu::RenderPipeline,
     pub mouse_pressed: bool,
     pub scale_factor: f64,
-    //    light_degree: u32,
+    pub snowfall_system: SnowfallSystem,
 }
 
 impl<T> State<T>
@@ -244,6 +243,23 @@ where
             )
         };
 
+        let snow_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Snow Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../res/shaders/snow.wgsl").into()),
+        });
+
+        let snow_render_pipeline = create_render_pipeline(
+            &device,
+            &render_pipeline_layout,
+            wgpu::TextureFormat::Rgba8UnormSrgb,
+            Some(texture::Texture::DEPTH_FORMAT),
+            &[SnowflakeVertex::desc(), SnowflakeInstance::desc()],
+            snow_shader,
+            "snow_render_pipeline",
+        );
+
+        let snowfall_system = SnowfallSystem::new(&device, 1000); // 1000个雪花
+
         Self {
             tui_size: (256, 79),
             device,
@@ -262,6 +278,7 @@ where
             size,
             mouse_pressed: false,
             scale_factor: 1.0f64,
+            snowfall_system,
         }
     }
 
@@ -333,6 +350,8 @@ where
         let data = controller.model_ctrl.update_model(dt);
         self.queue
             .write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&data));
+
+        self.snowfall_system.update(&self.queue, dt);
     }
 
     // the first return Vec is for gui, the second is for tui
@@ -555,6 +574,9 @@ where
                 &self.camera_bind_group,
                 //&self.light_bind_group,
             );
+
+            self.snowfall_system
+                .render(&mut render_pass, &self.camera_bind_group);
         }
         (texture_desc, texture)
     }

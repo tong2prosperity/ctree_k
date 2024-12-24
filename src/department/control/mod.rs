@@ -172,7 +172,7 @@ impl ModelController {
         }
 
         if self.presentation_mode {
-            self.theta += PI * dt * 0.2;
+            self.theta += PI * dt * 0.1;
             let rad = cgmath::Rad(self.theta);
             self.rotation = cgmath::Quaternion::from_angle_y(rad); // * cgmath::Quaternion::from_angle_x(rad);
         }
