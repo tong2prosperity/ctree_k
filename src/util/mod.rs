@@ -1,7 +1,4 @@
 use clap::Parser;
-
-pub mod cmd_arg;
-
 use lazy_static::lazy_static;
 
 

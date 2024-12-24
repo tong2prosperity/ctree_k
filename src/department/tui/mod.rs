@@ -22,7 +22,6 @@ use crate::department::{
 use log::{error, info};
 
 pub mod term;
-pub mod tui_with_window;
 
 pub struct TuiApp {
     pub raster: RasterRunner,
