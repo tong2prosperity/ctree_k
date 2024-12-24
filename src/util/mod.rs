@@ -20,7 +20,7 @@ pub struct Args {
     #[arg(short, long, default_value_t=false)]
     pub split: bool,
     /// object path to load, only support triangulated obj.
-    #[arg(long, default_value_t=String::from("./res/plane/plane.obj"))]
+    #[arg(long, default_value_t=String::from("./res/merry_tree/tree3/ctree3.obj"))]
     pub obj_path: String,
 
     /// only render a jpeg picture

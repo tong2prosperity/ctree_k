@@ -115,7 +115,7 @@ impl TuiApp {
                                     Event::Mouse(_) => {}
                                     Event::Paste(_) => {}
                                     Event::Resize(w, h) => {
-                                        println!("terminal window update to new size {} {}", w, h);
+                                        //println!("terminal window update to new size {} {}", w, h);
                                         //self.draw((w as u32, h as u32), &res);
                                     }
                                 }
@@ -191,13 +191,13 @@ impl TuiApp {
 
 impl Drop for TuiApp {
     fn drop(&mut self) {
-        execute!(self.stdout, terminal::Clear(ClearType::All));
-        execute!(
+        let _ = execute!(self.stdout, terminal::Clear(ClearType::All));
+        let _ = execute!(
             self.stdout,
             terminal::LeaveAlternateScreen,
             event::DisableMouseCapture
         );
-        execute!(self.stdout, crossterm::cursor::Show);
+        let _ = execute!(self.stdout, crossterm::cursor::Show);
         disable_raw_mode().unwrap();
     }
 }

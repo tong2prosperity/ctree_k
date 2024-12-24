@@ -3,10 +3,9 @@ use dognut::department::{
         constant::{self, HEIGHT, WIDTH},
         self_type,
     },
-    net::router,
     pipeline::{rasterizer::RasterRunner, shader::LambertianShader},
     preview::vector::Vector3,
-    tui::{tui_split::TuiSplitApp, tui_with_window::TuiWinApp, TuiApp},
+    tui::TuiApp,
     types::{msg, multi_sender::MultiSender},
 };
 
