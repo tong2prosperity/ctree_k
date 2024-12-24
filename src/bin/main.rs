@@ -58,7 +58,7 @@ fn main() {
         &arg.obj_path,
     );
 
-    let inner_rt = tokio::runtime::Builder::new_current_thread()
+    let inner_rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .unwrap();

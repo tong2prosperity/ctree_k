@@ -46,6 +46,7 @@ futures-intrusive = "0.5"
 game-loop = { version = "1.3", features = ["winit"] }
 
 gilrs = "0.*"
+rodio = "0.20.1"
 
 [dependencies.image]
 version = "0.25"

@@ -28,6 +28,8 @@ pub struct TuiApp {
     theta: f32,
     camera_controller: CameraController,
     gpu: Option<self_type::StateImp>,
+    is_playing_music: bool,
+    music_stop_tx: Option<tokio::sync::oneshot::Sender<()>>,
 }
 
 static FPS: u32 = 30;
@@ -60,6 +62,8 @@ impl TuiApp {
             theta: 0.,
             gpu: None,
             camera_controller: CameraController::new(2.0, 0.2, true),
+            is_playing_music: false,
+            music_stop_tx: None,
         }
     }
 
@@ -107,7 +111,52 @@ impl TuiApp {
                                     Event::FocusLost => {}
                                     Event::Key(k) => {
                                         if !g.game.camera_controller.process_tui_keyboard(&k) {
+                                            if let Some(tx) = g.game.music_stop_tx.take() {
+                                                let _ = tx.send(());
+                                            }
                                             should_exit = true;
+                                        }
+                                        if k.code == event::KeyCode::Char('m')
+                                            && !g.game.is_playing_music
+                                        {
+                                            g.game.is_playing_music = true;
+                                            let (stop_tx, stop_rx) =
+                                                tokio::sync::oneshot::channel();
+                                            g.game.music_stop_tx = Some(stop_tx);
+
+                                            tokio::spawn(async move {
+                                                let (_stream, handle) =
+                                                    rodio::OutputStream::try_default().unwrap();
+                                                let sink = rodio::Sink::try_new(&handle).unwrap();
+
+                                                let file = std::fs::File::open(
+                                                    "./res/music/christmas.mp3",
+                                                )
+                                                .unwrap();
+                                                let source = rodio::Decoder::new(
+                                                    std::io::BufReader::new(file),
+                                                )
+                                                .unwrap();
+
+                                                sink.append(source);
+
+                                                let mut stop_receiver = stop_rx;
+            
+                                                loop {
+                                                    if sink.empty() {
+                                                        break;
+                                                    }
+                                                    
+                                                    // 检查是否收到停止信号
+                                                    if stop_receiver.try_recv().is_ok() {
+                                                        sink.stop();
+                                                        break;
+                                                    }
+                                                    
+                                                    // 短暂休眠以避免CPU过度使用
+                                                    std::thread::sleep(Duration::from_millis(100));
+                                                }
+                                            });
                                         }
                                     }
                                     Event::Mouse(_) => {}
@@ -189,6 +238,9 @@ impl TuiApp {
 
 impl Drop for TuiApp {
     fn drop(&mut self) {
+        if let Some(tx) = self.music_stop_tx.take() {
+            let _ = tx.send(());
+        }
         let _ = execute!(self.stdout, terminal::Clear(ClearType::All));
         let _ = execute!(
             self.stdout,
@@ -196,6 +248,6 @@ impl Drop for TuiApp {
             event::DisableMouseCapture
         );
         let _ = execute!(self.stdout, crossterm::cursor::Show);
-        //disable_raw_mode().unwrap();
+        disable_raw_mode().unwrap();
     }
 }
