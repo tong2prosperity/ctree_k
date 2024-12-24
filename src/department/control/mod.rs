@@ -9,6 +9,7 @@ use crate::wgpu::instance::Instance;
 use winit::keyboard::KeyCode as VirtualKeyCode;
 
 pub mod camera_controller;
+use log::info;
 
 #[derive(Debug)]
 pub struct ModelController {
@@ -32,16 +33,16 @@ pub struct ModelController {
 impl ModelController {
     pub fn new(speed: f32, tui: bool) -> Self {
         let p = cgmath::Vector3 {
-            x: 0.0,
-            y: 0.,
-            z: 1.,
+            x: -1.46,
+            y: 1.19,
+            z: 3.61,
         };
         let q = cgmath::Quaternion::from_axis_angle(p.normalize(), cgmath::Deg(0.0));
         Self {
             position: p,
             theta: 0.,
             rotation: q,
-            presentation_mode: false,
+            presentation_mode: true,
             amount_left: 0.,
             amount_right: 0.,
             amount_forward: 0.,
@@ -159,7 +160,10 @@ impl ModelController {
         self.position.z += (self.amount_forward - self.amount_backward) * self.speed * dt;
         self.position.x += (self.amount_right - self.amount_left) * self.speed * dt;
         self.position.y += (self.amount_up - self.amount_down) * self.speed * dt;
-
+        info!(
+            "Model position updated - x: {:.2}, y: {:.2}, z: {:.2}",
+            self.position.x, self.position.y, self.position.z
+        );
         if self.tui {
             self.amount_down = 0.0;
             self.amount_up = 0.0;

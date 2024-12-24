@@ -67,7 +67,7 @@ where
     queue: wgpu::Queue,
     render_pipeline: wgpu::RenderPipeline,
     obj_model: model::Model,
-    light_model: model::Model,
+    //light_model: model::Model,
     camera: T,
     pub camera_controller: CameraController,
     camera_uniform: CameraUniform,
@@ -79,13 +79,13 @@ where
     depth_texture: texture::Texture,
     tui_depth_texture: texture::Texture,
     size: LogicalSize<u32>,
-    light_uniform: LightUniform,
-    light_buffer: wgpu::Buffer,
-    light_bind_group: wgpu::BindGroup,
-    light_render_pipeline: wgpu::RenderPipeline,
+    //light_uniform: LightUniform,
+    //light_buffer: wgpu::Buffer,
+    //light_bind_group: wgpu::BindGroup,
+//    light_render_pipeline: wgpu::RenderPipeline,
     pub mouse_pressed: bool,
     pub scale_factor: f64,
-    light_degree: u32,
+//    light_degree: u32,
 }
 
 impl<T> State<T>
@@ -206,14 +206,14 @@ where
                 .await
                 .unwrap();
 
-        let light_model = resources::load_model(
-            "./res/nice_cube/light_ball.obj",
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        )
-        .await
-        .unwrap();
+        // let light_model = resources::load_model(
+        //     "./res/nice_cube/light_ball.obj",
+        //     &device,
+        //     &queue,
+        //     &texture_bind_group_layout,
+        // )
+        // .await
+        // .unwrap();
 
         let depth_texture = texture::Texture::create_depth_texture(
             &device,
@@ -224,46 +224,46 @@ where
         let tui_depth_texture =
             texture::Texture::create_depth_texture(&device, (256, 79), "tui_depth_texture");
 
-        let light_uniform = LightUniform::default();
+        // let light_uniform = LightUniform::default();
 
-        let light_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("light"),
-            contents: bytemuck::cast_slice(&[light_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-        let light_bind_group_layout = LightUniform::bind_group_layout(&device);
+        // let light_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        //     label: Some("light"),
+        //     contents: bytemuck::cast_slice(&[light_uniform]),
+        //     usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        // });
+        // let light_bind_group_layout = LightUniform::bind_group_layout(&device);
 
-        let light_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: None,
-            layout: &light_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: light_buffer.as_entire_binding(),
-            }],
-        });
+        // let light_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        //     label: None,
+        //     layout: &light_bind_group_layout,
+        //     entries: &[wgpu::BindGroupEntry {
+        //         binding: 0,
+        //         resource: light_buffer.as_entire_binding(),
+        //     }],
+        // });
 
-        let light_render_pipeline = {
-            let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("Light Pipeline Layout"),
-                bind_group_layouts: &[&camera_bind_group_layout, &light_bind_group_layout],
-                push_constant_ranges: &[],
-            });
-            let shader = wgpu::ShaderModuleDescriptor {
-                label: Some("Light Shader"),
-                source: wgpu::ShaderSource::Wgsl(
-                    include_str!("../../res/shaders/light.wgsl").into(),
-                ),
-            };
-            create_render_pipeline(
-                &device,
-                &layout,
-                wgpu::TextureFormat::Rgba8UnormSrgb,
-                Some(texture::Texture::DEPTH_FORMAT),
-                &[model::ModelVertex::desc()],
-                shader,
-                "light_pipeline",
-            )
-        };
+        // let light_render_pipeline = {
+        //     let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        //         label: Some("Light Pipeline Layout"),
+        //         bind_group_layouts: &[&camera_bind_group_layout, &light_bind_group_layout],
+        //         push_constant_ranges: &[],
+        //     });
+        //     let shader = wgpu::ShaderModuleDescriptor {
+        //         label: Some("Light Shader"),
+        //         source: wgpu::ShaderSource::Wgsl(
+        //             include_str!("../../res/shaders/light.wgsl").into(),
+        //         ),
+        //     };
+        //     create_render_pipeline(
+        //         &device,
+        //         &layout,
+        //         wgpu::TextureFormat::Rgba8UnormSrgb,
+        //         Some(texture::Texture::DEPTH_FORMAT),
+        //         &[model::ModelVertex::desc()],
+        //         shader,
+        //         "light_pipeline",
+        //     )
+        // };
 
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -271,7 +271,7 @@ where
                 bind_group_layouts: &[
                     &texture_bind_group_layout,
                     &camera_bind_group_layout,
-                    &light_bind_group_layout,
+                    //&light_bind_group_layout,
                 ],
                 push_constant_ranges: &[],
             });
@@ -310,14 +310,14 @@ where
             depth_texture,
             tui_depth_texture,
             size,
-            light_model,
-            light_uniform,
-            light_buffer,
-            light_bind_group,
-            light_render_pipeline,
+            //light_model,
+            //light_uniform,
+            //light_buffer,
+            //light_bind_group,
+            //light_render_pipeline,
             mouse_pressed: false,
             scale_factor: 1.0f64,
-            light_degree: 0,
+            //light_degree: 0,
         }
     }
 
@@ -390,16 +390,16 @@ where
         self.queue
             .write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&data));
 
-        let old_position: cgmath::Vector3<_> = self.light_uniform.position.into();
-        self.light_uniform.position =
-            (cgmath::Quaternion::from_axis_angle((0.0, 1.0, 0.0).into(), cgmath::Deg(1.0))
-                * old_position)
-                .into();
-        self.queue.write_buffer(
-            &self.light_buffer,
-            0,
-            bytemuck::cast_slice(&[self.light_uniform]),
-        );
+        // let old_position: cgmath::Vector3<_> = self.light_uniform.position.into();
+        // self.light_uniform.position =
+        //     (cgmath::Quaternion::from_axis_angle((0.0, 1.0, 0.0).into(), cgmath::Deg(1.0))
+        //         * old_position)
+        //         .into();
+        // self.queue.write_buffer(
+        //     &self.light_buffer,
+        //     0,
+        //     bytemuck::cast_slice(&[self.light_uniform]),
+        // );
     }
 
     pub fn update_outside(&mut self, controller: &mut CameraController, dt: Duration) {
@@ -415,7 +415,7 @@ where
         self.queue
             .write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&data));
 
-        let old_position: cgmath::Vector3<_> = self.light_uniform.position.into();
+        // let old_position: cgmath::Vector3<_> = self.light_uniform.position.into();
 
         // self.light_degree += 1;
         // let res = self.light_degree / 180;
@@ -423,12 +423,17 @@ where
         // if res % 2 == 1 {
         //     clockwise = false;
         // }
-        //
-        // self.light_uniform.position =
-        //     (cgmath::Quaternion::from_axis_angle((0.0, 1.0, 0.0).into(), cgmath::Deg(if clockwise {-1.0} else {1.0}))
-        //         * old_position)
-        //         .into();
-        // self.queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&[self.light_uniform]));
+
+        // self.light_uniform.position = (cgmath::Quaternion::from_axis_angle(
+        //     (0.0, 1.0, 0.0).into(),
+        //     cgmath::Deg(if clockwise { -1.0 } else { 1.0 }),
+        // ) * old_position)
+        //     .into();
+        // self.queue.write_buffer(
+        //     &self.light_buffer,
+        //     0,
+        //     bytemuck::cast_slice(&[self.light_uniform]),
+        // );
     }
 
     // the first return Vec is for gui, the second is for tui
@@ -644,20 +649,20 @@ where
             });
 
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
-            use crate::wgpu::model::DrawLight;
-            render_pass.set_pipeline(&self.light_render_pipeline);
-            render_pass.draw_light_model(
-                &self.light_model,
-                &self.camera_bind_group,
-                &self.light_bind_group,
-            );
+            //use crate::wgpu::model::DrawLight;
+            //render_pass.set_pipeline(&self.light_render_pipeline);
+            //render_pass.draw_light_model(
+            //    &self.light_model,
+            //    &self.camera_bind_group,
+            //    &self.light_bind_group,
+            //);
 
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.draw_model_instanced(
                 &self.obj_model,
                 0..self.instances.len() as u32,
                 &self.camera_bind_group,
-                &self.light_bind_group,
+                //&self.light_bind_group,
             );
         }
         (texture_desc, texture)

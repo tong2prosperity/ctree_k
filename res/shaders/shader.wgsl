@@ -22,12 +22,12 @@ struct InstanceInput {
     @location(11) normal_matrix_2: vec3<f32>,
 }
 
-struct Light {
-    position: vec3<f32>,
-    color: vec3<f32>,
-};
-@group(2) @binding(0)
-var<uniform> light: Light;
+// struct Light {
+//     position: vec3<f32>,
+//     color: vec3<f32>,
+// };
+// @group(2) @binding(0)
+// var<uniform> light: Light;
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
@@ -73,23 +73,24 @@ var s_diffuse: sampler;
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let object_color: vec4<f32> = textureSample(t_diffuse, s_diffuse, in.tex_coords);
+    return vec4<f32>(object_color.xyz, object_color.a);
 
-    let ambient_strength = 0.1;
-    let ambient_color = light.color * ambient_strength;
+    // let ambient_strength = 0.1;
+    // let ambient_color = light.color * ambient_strength;
 
-    let light_dir = normalize(light.position - in.world_position);
-    let view_dir = normalize(camera.view_pos.xyz - in.world_position);
-    let half_dir = normalize(view_dir + light_dir);
+    // let light_dir = normalize(light.position - in.world_position);
+    // let view_dir = normalize(camera.view_pos.xyz - in.world_position);
+    // let half_dir = normalize(view_dir + light_dir);
 
 
-    let diffuse_strength = max(dot(in.world_normal, light_dir), 0.0);
-    let diffuse_color = light.color * diffuse_strength;
+    // let diffuse_strength = max(dot(in.world_normal, light_dir), 0.0);
+    // let diffuse_color = light.color * diffuse_strength;
 
-    let specular_strength = pow(max(dot(in.world_normal, half_dir), 0.0), 32.0);
-    let specular_color = specular_strength * light.color;
+    // let specular_strength = pow(max(dot(in.world_normal, half_dir), 0.0), 32.0);
+    // let specular_color = specular_strength * light.color;
 
-    let result = (ambient_color + diffuse_color + specular_color) * object_color.xyz;
+    // let result = (ambient_color + diffuse_color + specular_color) * object_color.xyz;
 
-    return vec4<f32>(result, object_color.a);
+    // return vec4<f32>(result, object_color.a);
 
 }

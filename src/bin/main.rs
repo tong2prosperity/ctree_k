@@ -1,3 +1,5 @@
+use std::fs::OpenOptions;
+
 use dognut::department::{
     common::{
         constant::{self, HEIGHT, WIDTH},
@@ -17,11 +19,19 @@ use dognut::{department::view::camera::Camera, util::ARG};
 use log::{debug, error, info, warn};
 
 fn main() {
+    let log_file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open("ctree.log")
+        .expect("无法创建日志文件");
+
     let env = env_logger::Env::default();
     env_logger::Builder::from_env(env)
-        .target(env_logger::Target::Stdout)
+        // 将 Target::Stdout 改为 Target::File
+        .target(env_logger::Target::Pipe(Box::new(log_file)))
+        //.target(env_logger::Target::Stdout)
         .filter(Some("wgpu_core"), LevelFilter::Off)
-        .filter_level(LevelFilter::Info)
+        .filter_level(LevelFilter::Error)
         .format_timestamp_millis()
         .init();
 
