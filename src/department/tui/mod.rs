@@ -80,9 +80,9 @@ impl TuiApp {
         .await;
         enable_raw_mode()?;
 
-        execute!(self.stdout, crossterm::cursor::Hide);
-        execute!(self.stdout, EnterAlternateScreen, event::EnableMouseCapture);
-        execute!(self.stdout, crossterm::terminal::Clear(ClearType::All));
+        execute!(self.stdout, crossterm::cursor::Hide)?;
+        execute!(self.stdout, EnterAlternateScreen, event::EnableMouseCapture)?;
+        execute!(self.stdout, crossterm::terminal::Clear(ClearType::All))?;
 
         let dimension = (256, 79);
         self.gpu = Some(state);
@@ -196,6 +196,6 @@ impl Drop for TuiApp {
             event::DisableMouseCapture
         );
         let _ = execute!(self.stdout, crossterm::cursor::Show);
-        disable_raw_mode().unwrap();
+        //disable_raw_mode().unwrap();
     }
 }

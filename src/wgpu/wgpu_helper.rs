@@ -561,7 +561,7 @@ where
             );
 
         }
-        self.snowfall_system.render(encoder, &view, &self.depth_texture.view, &self.camera_bind_group);
+        self.snowfall_system.render(encoder, &view, &depth_texture.view, &self.camera_bind_group);
         (texture_desc, texture)
     }
 }
