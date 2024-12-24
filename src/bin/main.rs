@@ -31,7 +31,7 @@ fn main() {
         .target(env_logger::Target::Pipe(Box::new(log_file)))
         //.target(env_logger::Target::Stdout)
         .filter(Some("wgpu_core"), LevelFilter::Off)
-        .filter_level(LevelFilter::Error)
+        .filter_level(LevelFilter::Info)
         .format_timestamp_millis()
         .init();
 

@@ -34,8 +34,8 @@ impl ModelController {
     pub fn new(speed: f32, tui: bool) -> Self {
         let p = cgmath::Vector3 {
             x: -1.46,
-            y: 1.19,
-            z: 3.61,
+            y: 0.0,
+            z: 4.20,
         };
         let q = cgmath::Quaternion::from_axis_angle(p.normalize(), cgmath::Deg(0.0));
         Self {
