@@ -43,7 +43,7 @@ wgpu = "23"
 winit = "0.30"
 crossbeam-channel = {version = "0.5.*"} # for thread synchronize
 clap = {version="4.*", features = ["derive"]}
-protobuf = "3.2.0"
+protobuf = "=3.2.0"
 turbojpeg = {version="1.1.1", features=["image"], optional = true}
 
 tokio = {version="1", features=["full"]}

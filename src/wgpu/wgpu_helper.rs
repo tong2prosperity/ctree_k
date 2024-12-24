@@ -1,31 +1,26 @@
 use std::iter;
 
-use std::num::NonZeroU32;
 use cgmath::prelude::*;
-use pixels::wgpu::util::DeviceExt;
 use pixels::wgpu;
-use winit::{
-    event::*,
+use pixels::wgpu::util::DeviceExt;
+use std::num::NonZeroU32;
+use winit::event::*;
 
-};
-
-
-use std::time::{Duration};
+use crate::department::common::constant::{HEIGHT, WIDTH};
+use crate::department::preview::{position, vector};
 use crate::department::types::msg::TransferMsg;
 use crate::department::types::multi_sender::MultiSender;
-use crate::department::common::constant::{WIDTH, HEIGHT};
+use crate::department::view::camera as dn_camera;
+use crate::department::view::camera_trait;
 use crossbeam_channel::Receiver;
 use lazy_static::lazy_static;
 use log::info;
+use std::time::Duration;
 use winit::dpi::{LogicalSize, PhysicalSize};
-use crate::department::view::camera_trait;
-use crate::department::preview::{position, vector};
-use crate::department::view::camera as dn_camera;
-
 
 use super::model;
-use super::texture;
 use super::resources;
+use super::texture;
 
 use model::{DrawModel, Vertex};
 
@@ -33,10 +28,8 @@ use crate::wgpu::create_render_pipeline;
 use crate::wgpu::instance::{Instance, InstanceRaw};
 use crate::wgpu::light::LightUniform;
 
-
-use crate::util::{ARG};
 use crate::department::control::camera_controller::CameraController;
-
+use crate::util::ARG;
 
 const NUM_INSTANCES_PER_ROW: u32 = 10;
 
@@ -65,8 +58,10 @@ impl CameraUniform {
     }
 }
 
-
-pub struct State<T> where T: camera_trait::CameraTrait {
+pub struct State<T>
+where
+    T: camera_trait::CameraTrait,
+{
     tui_size: (u32, u32),
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -93,13 +88,16 @@ pub struct State<T> where T: camera_trait::CameraTrait {
     light_degree: u32,
 }
 
-impl<T> State<T> where T: camera_trait::CameraTrait {
+impl<T> State<T>
+where
+    T: camera_trait::CameraTrait,
+{
     pub async fn new(size: LogicalSize<u32>, camera: T) -> Self {
         // The instance is a handle to our GPU
         // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
         log::warn!("WGPU setup");
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::all(),
+            backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
         let adapter = instance
@@ -114,18 +112,16 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    label: None,
                     features: wgpu::Features::empty(),
-                    // WebGL doesn't support all of wgpu's features, so if
-                    // we're building for the web we'll have to disable some.
                     limits: wgpu::Limits::default(),
+                    label: None,
                 },
                 // Some(&std::path::Path::new("trace")), // Trace path
                 None, // Trace path
             )
             .await
             .unwrap();
-        
+
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
@@ -162,11 +158,15 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
         });
 
         const SPACE_BETWEEN: f32 = 3.0;
-        
-        let position = cgmath::Vector3 { x:0., y: 0., z: -5. };
+
+        let position = cgmath::Vector3 {
+            x: 0.,
+            y: 0.,
+            z: -5.,
+        };
 
         let rotation = cgmath::Quaternion::from_axis_angle(position.normalize(), cgmath::Deg(0.0));
-        let instances = vec![Instance{position, rotation}];
+        let instances = vec![Instance { position, rotation }];
 
         let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
         println!("instance {:?}", instance_data.len());
@@ -201,45 +201,45 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
         });
 
         log::warn!("Load model");
-        let obj_model = resources::load_model(
-            &ARG.obj_path,
-            &device,
-            &queue,
-            &texture_bind_group_layout,
-        ).await.unwrap();
+        let obj_model =
+            resources::load_model(&ARG.obj_path, &device, &queue, &texture_bind_group_layout)
+                .await
+                .unwrap();
 
         let light_model = resources::load_model(
             "./res/nice_cube/light_ball.obj",
             &device,
             &queue,
             &texture_bind_group_layout,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
-        let depth_texture =
-            texture::Texture::create_depth_texture(&device, (size.width, size.height), "depth_texture");
+        let depth_texture = texture::Texture::create_depth_texture(
+            &device,
+            (size.width, size.height),
+            "depth_texture",
+        );
 
-        let tui_depth_texture = texture::Texture::create_depth_texture(&device, (256, 79), "tui_depth_texture");
+        let tui_depth_texture =
+            texture::Texture::create_depth_texture(&device, (256, 79), "tui_depth_texture");
 
         let light_uniform = LightUniform::default();
 
-        let light_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("light"),
-                contents: bytemuck::cast_slice(&[light_uniform]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            }
-        );
+        let light_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("light"),
+            contents: bytemuck::cast_slice(&[light_uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
         let light_bind_group_layout = LightUniform::bind_group_layout(&device);
 
-        let light_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor{
+        let light_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &light_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding:0,
-                    resource: light_buffer.as_entire_binding(),
-                }
-            ],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: light_buffer.as_entire_binding(),
+            }],
         });
 
         let light_render_pipeline = {
@@ -250,7 +250,9 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
             });
             let shader = wgpu::ShaderModuleDescriptor {
                 label: Some("Light Shader"),
-                source: wgpu::ShaderSource::Wgsl(include_str!("../../res/shaders/light.wgsl").into()),
+                source: wgpu::ShaderSource::Wgsl(
+                    include_str!("../../res/shaders/light.wgsl").into(),
+                ),
             };
             create_render_pipeline(
                 &device,
@@ -259,29 +261,36 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
                 Some(texture::Texture::DEPTH_FORMAT),
                 &[model::ModelVertex::desc()],
                 shader,
-                "light_pipeline"
+                "light_pipeline",
             )
         };
 
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&texture_bind_group_layout, &camera_bind_group_layout, &light_bind_group_layout],
+                bind_group_layouts: &[
+                    &texture_bind_group_layout,
+                    &camera_bind_group_layout,
+                    &light_bind_group_layout,
+                ],
                 push_constant_ranges: &[],
             });
 
         let render_pipeline = {
             let shader = wgpu::ShaderModuleDescriptor {
                 label: Some("Normal shader"),
-                source: wgpu::ShaderSource::Wgsl(include_str!("../../res/shaders/shader.wgsl").into()),
+                source: wgpu::ShaderSource::Wgsl(
+                    include_str!("../../res/shaders/shader.wgsl").into(),
+                ),
             };
             create_render_pipeline(
-                &device, &render_pipeline_layout,
+                &device,
+                &render_pipeline_layout,
                 wgpu::TextureFormat::Rgba8UnormSrgb,
                 Some(texture::Texture::DEPTH_FORMAT),
                 &[model::ModelVertex::desc(), InstanceRaw::desc()],
                 shader,
-                "render_pipeline"
+                "render_pipeline",
             )
         };
 
@@ -315,27 +324,39 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
     pub fn resize(&mut self, new_size: PhysicalSize<u32>, scale_factor: f64) {
         let logical_size = new_size.to_logical::<u32>(scale_factor);
         if logical_size.width % 256 != 0 {
-            return ;
+            return;
         }
         if logical_size.width > 0 && logical_size.height > 0 {
-            
             info!("window update from {:?} to {:?}", self.size, logical_size);
-            self.camera.update_projection(logical_size.width, logical_size.height);
+            self.camera
+                .update_projection(logical_size.width, logical_size.height);
             self.size = logical_size;
-            self.depth_texture =
-                texture::Texture::create_depth_texture(&self.device,(self.size.width, self.size.height), "depth_label");
+            self.depth_texture = texture::Texture::create_depth_texture(
+                &self.device,
+                (self.size.width, self.size.height),
+                "depth_label",
+            );
         }
     }
 
     pub fn input(&mut self, event: &DeviceEvent) -> bool {
         match event {
-            DeviceEvent::Key(
-                RawKeyEvent {
-                    physical_key: key,
-                    state
+            DeviceEvent::Key(RawKeyEvent {
+                physical_key: key,
+                state,
+            }) => {
+                match key {
+                    winit::keyboard::PhysicalKey::Code(key_code) => {
+                        self.camera_controller.process_keyboard(*key_code, *state)
+                    }
+                    winit::keyboard::PhysicalKey::Unidentified(native_key_code) => {
+                        info!("native_key_code: {:?}", native_key_code);
+                        true
+                        //self.camera_controller.process_keyboard(native_key_code, *state)
+                    }
                 }
-            ) => self.camera_controller.process_keyboard(*key, *state),
-            DeviceEvent::MouseWheel { delta, .. } => {
+            }
+            DeviceEvent::MouseWheel { delta } => {
                 self.camera_controller.process_scroll(delta);
                 true
             }
@@ -366,22 +387,22 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
         );
 
         let data = self.camera_controller.model_ctrl.update_model(dt);
-        self.queue.write_buffer(
-            &self.instance_buffer,
-            0,
-            bytemuck::cast_slice(&data)
-        );
+        self.queue
+            .write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&data));
 
         let old_position: cgmath::Vector3<_> = self.light_uniform.position.into();
         self.light_uniform.position =
             (cgmath::Quaternion::from_axis_angle((0.0, 1.0, 0.0).into(), cgmath::Deg(1.0))
                 * old_position)
                 .into();
-        self.queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&[self.light_uniform]));
-
+        self.queue.write_buffer(
+            &self.light_buffer,
+            0,
+            bytemuck::cast_slice(&[self.light_uniform]),
+        );
     }
 
-    pub fn update_outside(&mut self, controller:&mut CameraController,dt: Duration) {
+    pub fn update_outside(&mut self, controller: &mut CameraController, dt: Duration) {
         controller.update_camera(&mut self.camera, dt);
         self.camera_uniform.update_view_proj(&self.camera);
         self.queue.write_buffer(
@@ -391,11 +412,8 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
         );
 
         let data = controller.model_ctrl.update_model(dt);
-        self.queue.write_buffer(
-            &self.instance_buffer,
-            0,
-            bytemuck::cast_slice(&data)
-        );
+        self.queue
+            .write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&data));
 
         let old_position: cgmath::Vector3<_> = self.light_uniform.position.into();
 
@@ -411,20 +429,72 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
         //         * old_position)
         //         .into();
         // self.queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&[self.light_uniform]));
-
     }
 
     // the first return Vec is for gui, the second is for tui
-    pub fn render(&mut self, tui_with_window: bool) -> (Vec<u8>, Option<Vec<u8>>) {
+    pub fn render(&mut self, only_tui: bool, tui_with_window: bool) -> (Vec<u8>, Option<Vec<u8>>) {
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
 
-        let (texture_desc, texture) = self.encode_a_new_render_texutre(&mut encoder, (self.size.width, self.size.height), &self.depth_texture);
+        if only_tui {
+            let view_formats = vec![wgpu::TextureFormat::Rgba8Unorm];
+            let (tui_desc, tui_texture) = self.encode_a_new_render_texutre(
+                &mut encoder,
+                (self.tui_size.0, self.tui_size.1),
+                &self.tui_depth_texture,
+                &view_formats,
+            );
+            let u32_size = std::mem::size_of::<u32>() as u32;
+            let tui_output_buffer = self.create_output_buffer(self.tui_size, u32_size);
+            encoder.copy_texture_to_buffer(
+                wgpu::ImageCopyTexture {
+                    aspect: wgpu::TextureAspect::All,
+                    texture: &tui_texture,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
+                },
+                wgpu::ImageCopyBuffer {
+                    buffer: &tui_output_buffer,
+                    layout: wgpu::ImageDataLayout {
+                        offset: 0,
+                        bytes_per_row: Some(u32_size * self.tui_size.0),
+                        rows_per_image: Some(self.tui_size.1),
+                    },
+                },
+                tui_desc.size,
+            );
+
+            self.queue.submit(iter::once(encoder.finish()));
+
+            let mut tui_slice = tui_output_buffer.slice(..);
+            // NOTE: We have to create the mapping THEN device.poll() before await
+            // the future. Otherwise the application will freeze.
+            let (tx, rx) = futures_intrusive::channel::shared::oneshot_channel();
+            tui_slice.map_async(wgpu::MapMode::Read, move |result| {
+                tx.send(result).unwrap();
+            });
+
+            self.device.poll(wgpu::Maintain::Wait);
+            pollster::block_on(rx.receive());
+
+            let data = tui_slice.get_mapped_range();
+            let tui_buf = data.iter().map(|x| *x).collect();
+
+            return (tui_buf, None);
+        }
+
+        let (texture_desc, texture) = self.encode_a_new_render_texutre(
+            &mut encoder,
+            (self.size.width, self.size.height),
+            &self.depth_texture,
+            &[wgpu::TextureFormat::Rgba8UnormSrgb],
+        );
         let u32_size = std::mem::size_of::<u32>() as u32;
-        let output_buffer = self.create_output_buffer((self.size.width, self.size.height),u32_size);
+        let output_buffer =
+            self.create_output_buffer((self.size.width, self.size.height), u32_size);
 
         encoder.copy_texture_to_buffer(
             wgpu::ImageCopyTexture {
@@ -446,8 +516,13 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
 
         let tui_output_buffer = self.create_output_buffer(self.tui_size, u32_size);
         if tui_with_window {
-            let (tui_desc, tui_texture) = self.encode_a_new_render_texutre(&mut encoder, (self.tui_size.0, self.tui_size.1), &self.tui_depth_texture);
-
+            let view_formats = vec![wgpu::TextureFormat::Rgba8UnormSrgb];
+            let (tui_desc, tui_texture) = self.encode_a_new_render_texutre(
+                &mut encoder,
+                (self.tui_size.0, self.tui_size.1),
+                &self.tui_depth_texture,
+                &view_formats,
+            );
 
             encoder.copy_texture_to_buffer(
                 wgpu::ImageCopyTexture {
@@ -461,7 +536,7 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
                     layout: wgpu::ImageDataLayout {
                         offset: 0,
                         bytes_per_row: Some(u32_size * self.tui_size.0),
-                            rows_per_image: Some(self.tui_size.1),
+                        rows_per_image: Some(self.tui_size.1),
                     },
                 },
                 tui_desc.size,
@@ -486,8 +561,9 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
             if tui_with_window {
                 tui_slice = Some(tui_output_buffer.slice(..));
                 // tui_slice will be mapped with buffer_slice, so we don't need to send a signal.
-                tui_slice.unwrap().map_async(wgpu::MapMode::Read, move |_result| {
-                });
+                tui_slice
+                    .unwrap()
+                    .map_async(wgpu::MapMode::Read, move |_result| {});
             }
             self.device.poll(wgpu::Maintain::Wait);
             pollster::block_on(rx.receive());
@@ -517,7 +593,13 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
         output_buffer
     }
 
-    fn encode_a_new_render_texutre(&self, encoder: &mut wgpu::CommandEncoder, w_h: (u32, u32), depth_texture: &texture::Texture) -> (wgpu::TextureDescriptor, wgpu::Texture) {
+    fn encode_a_new_render_texutre<'a>(
+        &self,
+        encoder: &mut wgpu::CommandEncoder,
+        w_h: (u32, u32),
+        depth_texture: &texture::Texture,
+        view_formats: &'a [wgpu::TextureFormat],
+    ) -> (wgpu::TextureDescriptor<'a>, wgpu::Texture) {
         let texture_desc = wgpu::TextureDescriptor {
             size: wgpu::Extent3d {
                 width: w_h.0,
@@ -530,10 +612,10 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
             format: wgpu::TextureFormat::Rgba8UnormSrgb,
             usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT,
             label: None,
+            view_formats: view_formats,
         };
         let texture = self.device.create_texture(&texture_desc);
-        let view = texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -564,43 +646,56 @@ impl<T> State<T> where T: camera_trait::CameraTrait {
             render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
             use crate::wgpu::model::DrawLight;
             render_pass.set_pipeline(&self.light_render_pipeline);
-            render_pass.draw_light_model(&self.light_model, &self.camera_bind_group, &self.light_bind_group);
+            render_pass.draw_light_model(
+                &self.light_model,
+                &self.camera_bind_group,
+                &self.light_bind_group,
+            );
 
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.draw_model_instanced(
                 &self.obj_model,
                 0..self.instances.len() as u32,
                 &self.camera_bind_group,
-                &self.light_bind_group
+                &self.light_bind_group,
             );
         }
         (texture_desc, texture)
     }
 }
 
-pub fn run(_r: Receiver<TransferMsg>, ms: MultiSender<TransferMsg>) {
-    let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
-    rt.block_on(async {
-
-        let camera = dn_camera::Camera::new(
-            45.,
-            WIDTH as f32 / HEIGHT as f32,
-            0.1,
-            100.,
-            position::Pos3::from_xyz(0.0, 0., 10.),
-            vector::Vector3::from_xyz(0., 0., 1.),
-            vector::Vector3::from_xyz(0., 1., 0.),
-        );
-        println!("use new camera");
-        // let projection = cg_camera::Projection::new(WIDTH, HEIGHT, cgmath::Deg(45.), 0.1, 100.0);
-        // let camera = cg_camera::Camera::new((0.0, 0., 10.), cgmath::Deg(-90.0), cgmath::Deg(-0.0), projection);
-        let mut state = State::new(LogicalSize{height: HEIGHT, width:WIDTH}, camera).await;
-        loop {
-            let buf = state.render(false).0;
-            ms.net.send(TransferMsg::RenderedData(buf.clone()));
-            ms.win.send(TransferMsg::RenderedData(buf));
-            // println!("render once");
-            // sleep(Duration::from_millis(100)).await
-        }
-    });
-}
+// pub fn run(_r: Receiver<TransferMsg>, ms: MultiSender<TransferMsg>) {
+//     let rt = tokio::runtime::Builder::new_current_thread()
+//         .enable_all()
+//         .build()
+//         .unwrap();
+//     rt.block_on(async {
+//         let camera = dn_camera::Camera::new(
+//             45.,
+//             WIDTH as f32 / HEIGHT as f32,
+//             0.1,
+//             100.,
+//             position::Pos3::from_xyz(0.0, 0., 10.),
+//             vector::Vector3::from_xyz(0., 0., 1.),
+//             vector::Vector3::from_xyz(0., 1., 0.),
+//         );
+//         println!("use new camera");
+//         // let projection = cg_camera::Projection::new(WIDTH, HEIGHT, cgmath::Deg(45.), 0.1, 100.0);
+//         // let camera = cg_camera::Camera::new((0.0, 0., 10.), cgmath::Deg(-90.0), cgmath::Deg(-0.0), projection);
+//         let mut state = State::new(
+//             LogicalSize {
+//                 height: HEIGHT,
+//                 width: WIDTH,
+//             },
+//             camera,
+//         )
+//         .await;
+//         loop {
+//             let buf = state.render(false).0;
+//             ms.net.send(TransferMsg::RenderedData(buf.clone()));
+//             ms.win.send(TransferMsg::RenderedData(buf));
+//             // println!("render once");
+//             // sleep(Duration::from_millis(100)).await
+//         }
+//     });
+// }

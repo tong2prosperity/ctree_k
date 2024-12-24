@@ -1,13 +1,13 @@
 use std::f32::consts::FRAC_PI_2;
 use std::time::Duration;
 
-
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use winit::dpi::PhysicalPosition;
 use winit::event::*;
 
-use crate::department::view::camera_trait;
+use winit::keyboard::KeyCode as VirtualKeyCode;
 
+use crate::department::view::camera_trait;
 
 use super::ModelController;
 
@@ -28,7 +28,7 @@ pub struct CameraController {
     sensitivity: f32,
     pub ctrl_pressed: bool,
     pub model_ctrl: ModelController,
-    tui:bool,
+    tui: bool,
 }
 
 impl CameraController {
@@ -47,18 +47,22 @@ impl CameraController {
             sensitivity,
             ctrl_pressed: false,
             model_ctrl: ModelController::new(speed, tui),
-            tui
+            tui,
         }
     }
 
     pub fn process_tui_keyboard(&mut self, key: &KeyEvent) -> bool {
-        if key.modifiers == KeyModifiers::CONTROL{
+        if key.modifiers == KeyModifiers::CONTROL {
             if key.kind == KeyEventKind::Press {
                 self.model_ctrl.process_keyboard_tui(key);
             }
             return true;
         }
-        let amount = if key.kind == KeyEventKind::Press {1.0} else {0.0};
+        let amount = if key.kind == KeyEventKind::Press {
+            1.0
+        } else {
+            0.0
+        };
         match key.code {
             KeyCode::Backspace => {}
             KeyCode::Left | KeyCode::Char('a') => {
@@ -88,26 +92,30 @@ impl CameraController {
         return true;
     }
 
-    pub fn process_keyboard(&mut self, key: VirtualKeyCode, state: ElementState) -> bool{
+    pub fn process_keyboard(&mut self, key: VirtualKeyCode, state: ElementState) -> bool {
         if self.ctrl_pressed {
-            return self.model_ctrl.process_keyboard(key, state);
+            //return self.model_ctrl.process_keyboard(key, state);
         }
 
-        let amount = if state == ElementState::Pressed { 1.0 } else { 0.0 };
+        let amount = if state == ElementState::Pressed {
+            1.0
+        } else {
+            0.0
+        };
         match key {
-            VirtualKeyCode::W | VirtualKeyCode::Up => {
+            VirtualKeyCode::KeyW | VirtualKeyCode::ArrowUp => {
                 self.amount_forward = amount;
                 true
             }
-            VirtualKeyCode::S | VirtualKeyCode::Down => {
+            VirtualKeyCode::KeyS | VirtualKeyCode::ArrowDown => {
                 self.amount_backward = amount;
                 true
             }
-            VirtualKeyCode::A | VirtualKeyCode::Left => {
+            VirtualKeyCode::KeyA | VirtualKeyCode::ArrowLeft => {
                 self.amount_left = amount;
                 true
             }
-            VirtualKeyCode::D | VirtualKeyCode::Right => {
+            VirtualKeyCode::KeyD | VirtualKeyCode::ArrowRight => {
                 self.amount_right = amount;
                 true
             }
@@ -115,14 +123,12 @@ impl CameraController {
                 self.amount_up = amount;
                 true
             }
-            VirtualKeyCode::LShift => {
+            VirtualKeyCode::ShiftLeft => {
                 self.amount_down = amount;
                 true
             }
 
-            VirtualKeyCode::Q => {
-                false
-            }
+            VirtualKeyCode::Escape | VirtualKeyCode::KeyQ => false,
             _ => true,
         }
     }
@@ -136,10 +142,7 @@ impl CameraController {
         self.scroll = -match delta {
             // I'm assuming a line is about 100 pixels
             MouseScrollDelta::LineDelta(_, scroll) => scroll * 100.0,
-            MouseScrollDelta::PixelDelta(PhysicalPosition {
-                                             y: scroll,
-                                             ..
-                                         }) => *scroll as f32,
+            MouseScrollDelta::PixelDelta(PhysicalPosition { y: scroll, .. }) => *scroll as f32,
         };
     }
 
@@ -151,21 +154,27 @@ impl CameraController {
         let right_dt = (self.amount_right - self.amount_left) * self.speed * dt;
         let scroll_dt = self.scroll * self.speed * self.sensitivity * dt;
         let up_dt = (self.amount_up - self.amount_down) * self.speed * dt;
-        camera.update_camera(forward_dt, right_dt, scroll_dt, up_dt, self.rotate_horizontal, self.rotate_vertical, self.sensitivity * dt);
+        camera.update_camera(
+            forward_dt,
+            right_dt,
+            scroll_dt,
+            up_dt,
+            self.rotate_horizontal,
+            self.rotate_vertical,
+            self.sensitivity * dt,
+        );
         self.scroll = 0.;
         self.rotate_horizontal = 0.0;
         self.rotate_vertical = 0.0;
-
 
         if self.tui {
             self.amount_backward = 0.;
             self.amount_down = 0.;
             self.amount_forward = 0.;
-            self.amount_left =0.;
-            self.amount_right =0.;
+            self.amount_left = 0.;
+            self.amount_right = 0.;
             self.amount_up = 0.;
         }
-
 
         // Move in/out (aka. "zoom")
         // Note: this isn't an actual zoom. The camera's position
@@ -191,6 +200,5 @@ impl CameraController {
         // camera.position += forward * (self.amount_forward - self.amount_backward) * self.speed * dt;
         // camera.position += right * (self.amount_right - self.amount_left) * self.speed * dt;
         //
-
     }
 }

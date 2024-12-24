@@ -103,33 +103,33 @@ impl ObjectLoader {
             render_objects.push(render_o);
         }
 
-        for (i, m) in materials.iter().enumerate() {
-            println!("material[{}].name = \'{}\'", i, m.name);
-            println!(
-                "    material.Ka = ({}, {}, {})",
-                m.ambient[0], m.ambient[1], m.ambient[2]
-            );
-            println!(
-                "    material.Kd = ({}, {}, {})",
-                m.diffuse[0], m.diffuse[1], m.diffuse[2]
-            );
-            println!(
-                "    material.Ks = ({}, {}, {})",
-                m.specular[0], m.specular[1], m.specular[2]
-            );
-            println!("    material.Ns = {}", m.shininess);
-            println!("    material.d = {}", m.dissolve);
-            println!("    material.map_Ka = {}", m.ambient_texture);
-            println!("    material.map_Kd = {}", m.diffuse_texture);
-            println!("    material.map_Ks = {}", m.specular_texture);
-            println!("    material.map_Ns = {}", m.shininess_texture);
-            println!("    material.map_Bump = {}", m.normal_texture);
-            println!("    material.map_d = {}", m.dissolve_texture);
+        // for (i, m) in materials.iter().enumerate() {
+        //     println!("material[{}].name = \'{}\'", i, m.name);
+        //     println!(
+        //         "    material.Ka = ({}, {}, {})",
+        //         m.ambient.unwrap()[0], m.ambient.unwrap()[1], m.ambient.unwrap()[2]
+        //     );
+        //     println!(
+        //         "    material.Kd = ({}, {}, {})",
+        //         m.diffuse[0], m.diffuse[1], m.diffuse[2]
+        //     );
+        //     println!(
+        //         "    material.Ks = ({}, {}, {})",
+        //         m.specular[0], m.specular[1], m.specular[2]
+        //     );
+        //     println!("    material.Ns = {}", m.shininess);
+        //     println!("    material.d = {}", m.dissolve);
+        //     println!("    material.map_Ka = {}", m.ambient_texture);
+        //     println!("    material.map_Kd = {}", m.diffuse_texture);
+        //     println!("    material.map_Ks = {}", m.specular_texture);
+        //     println!("    material.map_Ns = {}", m.shininess_texture);
+        //     println!("    material.map_Bump = {}", m.normal_texture);
+        //     println!("    material.map_d = {}", m.dissolve_texture);
 
-            for (k, v) in &m.unknown_param {
-                println!("    material.{} = {}", k, v);
-            }
-        }
+        //     for (k, v) in &m.unknown_param {
+        //         println!("    material.{} = {}", k, v);
+        //     }
+        // }
 
         render_objects
     }
@@ -154,8 +154,9 @@ impl ObjectLoader {
         println!("we've got {} triangles in total.", model.mesh.indices.len() / 3);
 
         if let Some(i) = model.mesh.material_id {
+            let diffuse_texture = mat[i].diffuse_texture.clone();
             if model_path.is_relative() {
-                let texture_path = model_path.parent().unwrap().join(Path::new(&mat[i].diffuse_texture));
+                let texture_path = model_path.parent().unwrap().join(Path::new(&diffuse_texture.unwrap()));
                 let texture = image::open(texture_path);
                 if texture.is_err() {
                     triangle_resources.image = None;

@@ -2,11 +2,11 @@ use std::f32::consts::PI;
 
 use cgmath::{InnerSpace, Rotation3};
 
-use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
-use winit::event::{ElementState, VirtualKeyCode};
-
+use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use winit::event::ElementState;
 
 use crate::wgpu::instance::Instance;
+use winit::keyboard::KeyCode as VirtualKeyCode;
 
 pub mod camera_controller;
 
@@ -26,23 +26,42 @@ pub struct ModelController {
     rotate_vertical: f32,
     scroll: f32,
     speed: f32,
-    tui: bool
+    tui: bool,
 }
 
 impl ModelController {
     pub fn new(speed: f32, tui: bool) -> Self {
-        let p = cgmath::Vector3{x: 0.0, y: 0., z:1.};
+        let p = cgmath::Vector3 {
+            x: 0.0,
+            y: 0.,
+            z: 1.,
+        };
         let q = cgmath::Quaternion::from_axis_angle(p.normalize(), cgmath::Deg(0.0));
-        Self {position: p,
+        Self {
+            position: p,
             theta: 0.,
             rotation: q,
             presentation_mode: false,
-            amount_left: 0., amount_right: 0., amount_forward: 0., amount_backward: 0., amount_up: 0.,
-            amount_down: 0., rotate_horizontal: 0., rotate_vertical: 0., scroll: 0., speed , tui}
+            amount_left: 0.,
+            amount_right: 0.,
+            amount_forward: 0.,
+            amount_backward: 0.,
+            amount_up: 0.,
+            amount_down: 0.,
+            rotate_horizontal: 0.,
+            rotate_vertical: 0.,
+            scroll: 0.,
+            speed,
+            tui,
+        }
     }
 
     pub fn process_keyboard_tui(&mut self, key: &KeyEvent) -> bool {
-        let amount = if key.kind == KeyEventKind::Press {1.0} else {0.0};
+        let amount = if key.kind == KeyEventKind::Press {
+            1.0
+        } else {
+            0.0
+        };
         match key.code {
             KeyCode::Backspace => {}
             KeyCode::Left | KeyCode::Char('a') => {
@@ -67,70 +86,85 @@ impl ModelController {
                 self.presentation_mode = !self.presentation_mode;
             }
             KeyCode::Char('r') => {
-                let p = cgmath::Vector3{x:0.0, y:0.0, z:1.0};
-                self.rotation = cgmath::Quaternion::from_axis_angle(p.normalize(), cgmath::Deg(0.0));
+                let p = cgmath::Vector3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 1.0,
+                };
+                self.rotation =
+                    cgmath::Quaternion::from_axis_angle(p.normalize(), cgmath::Deg(0.0));
             }
             KeyCode::Modifier(_) => {}
             _ => {}
         }
 
         return true;
-
     }
 
-    pub fn process_keyboard(&mut self, key: VirtualKeyCode, state:ElementState) -> bool {
-        let amount = if state == ElementState::Pressed { 1.0 } else { 0.0 };
-        match key {
-            VirtualKeyCode::W | VirtualKeyCode::Up => {
-                self.amount_forward = amount;
-                true
-            }
-            VirtualKeyCode::S | VirtualKeyCode::Down => {
-                self.amount_backward = amount;
-                true
-            }
-            VirtualKeyCode::A | VirtualKeyCode::Left => {
-                self.amount_left = amount;
-                true
-            }
-            VirtualKeyCode::D | VirtualKeyCode::Right => {
-                self.amount_right = amount;
-                true
-            }
-            VirtualKeyCode::P => {
-                self.presentation_mode = !self.presentation_mode;
-                true
-            }
-            VirtualKeyCode::R => {
-                let p = cgmath::Vector3{x:0.0, y:0.0, z:1.0};
-                self.rotation = cgmath::Quaternion::from_axis_angle(p.normalize(), cgmath::Deg(0.0));
-                true
-            }
-            VirtualKeyCode::Space => {
-                self.amount_up = amount;
-                true
-            }
-            VirtualKeyCode::LShift => {
-                self.amount_down = amount;
-                true
-            }
-            _ => true,
-        }
-    }
+    // pub fn process_keyboard(&mut self, key: KeyCode, state: ElementState) -> bool {
+    //     let amount = if state == ElementState::Pressed {
+    //         1.0
+    //     } else {
+    //         0.0
+    //     };
+    //     match key {
+    //         KeyCode::Char('w') | KeyCode::Up => {
+    //             self.amount_forward = amount;
+    //             true
+    //         }
+    //         KeyCode::Char('s') | KeyCode::Down => {
+    //             self.amount_backward = amount;
+    //             true
+    //         }
+    //         KeyCode::Char('a') | KeyCode::Left => {
+    //             self.amount_left = amount;
+    //             true
+    //         }
+    //         KeyCode::Char('d') | KeyCode::Right => {
+    //             self.amount_right = amount;
+    //             true
+    //         }
+    //         KeyCode::Char('p') => {
+    //             self.presentation_mode = !self.presentation_mode;
+    //             true
+    //         }
+    //         KeyCode::Char('r') => {
+    //             let p = cgmath::Vector3 {
+    //                 x: 0.0,
+    //                 y: 0.0,
+    //                 z: 1.0,
+    //             };
+    //             self.rotation =
+    //                 cgmath::Quaternion::from_axis_angle(p.normalize(), cgmath::Deg(0.0));
+    //             true
+    //         }
+    //         KeyCode::Char(' ') => {
+    //             self.amount_up = amount;
+    //             true
+    //         }
+    //         // KeyModifiers:: => {
+    //         //     self.amount_down = amount;
+    //         //     true
+    //         // }
+    //         _ => true,
+    //     }
+    // }
 
-    pub fn update_model(&mut self, dt: std::time::Duration) -> Vec<crate::wgpu::instance::InstanceRaw>{
+    pub fn update_model(
+        &mut self,
+        dt: std::time::Duration,
+    ) -> Vec<crate::wgpu::instance::InstanceRaw> {
         let dt = dt.as_secs_f32();
 
-        self.position.z +=  (self.amount_forward - self.amount_backward) * self.speed * dt;
-        self.position.x +=  (self.amount_right - self.amount_left) * self.speed * dt;
+        self.position.z += (self.amount_forward - self.amount_backward) * self.speed * dt;
+        self.position.x += (self.amount_right - self.amount_left) * self.speed * dt;
         self.position.y += (self.amount_up - self.amount_down) * self.speed * dt;
-
 
         if self.tui {
             self.amount_down = 0.0;
             self.amount_up = 0.0;
             self.amount_left = 0.0;
-            self.amount_right =  0.0;
+            self.amount_right = 0.0;
             self.amount_forward = 0.0;
             self.amount_backward = 0.0;
         }
@@ -138,10 +172,13 @@ impl ModelController {
         if self.presentation_mode {
             self.theta += PI * dt * 0.2;
             let rad = cgmath::Rad(self.theta);
-            self.rotation = cgmath::Quaternion::from_angle_y(rad);// * cgmath::Quaternion::from_angle_x(rad);
+            self.rotation = cgmath::Quaternion::from_angle_y(rad); // * cgmath::Quaternion::from_angle_x(rad);
         }
 
-        let instances = vec![Instance{position: self.position.clone(), rotation:self.rotation.clone()}];
+        let instances = vec![Instance {
+            position: self.position.clone(),
+            rotation: self.rotation.clone(),
+        }];
 
         let data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
 

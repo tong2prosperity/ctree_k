@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use image::GenericImageView;
-use winit::event::VirtualKeyCode;
+use winit::keyboard::KeyCode;
 
 use crate::department::common::constant;
 use crate::department::model::object_buffer::ObjectBuffer;
@@ -23,12 +23,20 @@ pub struct Camera {
     forward: Vector3,
     up: Vector3,
     pub model: HomoTransform,
-    pub perspective_projection: HMat
+    pub perspective_projection: HMat,
 }
 
 impl camera_trait::CameraTrait for Camera {
-    fn update_camera(&mut self, _forward_dt: f32, _right_dt: f32, _scroll_dt: f32, _up_dt: f32, _hori: f32, _ver: f32, _sensi: f32) {
-
+    fn update_camera(
+        &mut self,
+        _forward_dt: f32,
+        _right_dt: f32,
+        _scroll_dt: f32,
+        _up_dt: f32,
+        _hori: f32,
+        _ver: f32,
+        _sensi: f32,
+    ) {
     }
 
     fn to_view_position(&self) -> [f32; 4] {
@@ -43,19 +51,25 @@ impl camera_trait::CameraTrait for Camera {
         self.ratio = width as f32 / height as f32;
         self.perspective_projection = if constant::IS_LEFT_HAND {
             Camera::perspective_projection_mat_left_hand(self.fov_y, self.ratio, self.n, self.z)
-        }
-        else {
+        } else {
             Camera::perspective_projection_mat_right_hand(self.fov_y, self.ratio, self.n, self.z)
         };
     }
 }
 
 impl Camera {
-    pub fn new(fov_y: f32, ratio: f32, n: f32, z: f32, pos: Pos3, forward: Vector3, up: Vector3) -> Self{
-        let persp = if constant::IS_LEFT_HAND { 
+    pub fn new(
+        fov_y: f32,
+        ratio: f32,
+        n: f32,
+        z: f32,
+        pos: Pos3,
+        forward: Vector3,
+        up: Vector3,
+    ) -> Self {
+        let persp = if constant::IS_LEFT_HAND {
             Camera::perspective_projection_mat_left_hand(fov_y, ratio, n, z)
-        }
-        else {
+        } else {
             Camera::perspective_projection_mat_right_hand(fov_y, ratio, n, z)
         };
         Self {
@@ -71,44 +85,49 @@ impl Camera {
         }
     }
 
-    pub fn move_view(&mut self, input: VirtualKeyCode) {
+    pub fn move_view(&mut self, input: KeyCode) {
         match input {
-            VirtualKeyCode::Q => {
+            KeyCode::KeyQ => {
                 let vec = self.up.cross(&self.forward);
                 self.eye += vec;
-            },
-            VirtualKeyCode::E => {
+            }
+            KeyCode::KeyE => {
                 let vec = self.forward.cross(&self.up);
                 self.eye += vec;
-            },
-            VirtualKeyCode::W => {
+            }
+            KeyCode::KeyW => {
                 self.eye += &self.forward;
-            },
-            VirtualKeyCode::S => {
+            }
+            KeyCode::KeyS => {
                 let _vec = self.forward.cross(&self.up);
                 self.eye -= &self.forward;
-            },
-            VirtualKeyCode::A => {
+            }
+            KeyCode::KeyA => {
                 // let r = Transform::rotation_matrix(&self.up, -std::f32::consts::PI / 180.);
                 // let vec = self.forward.cross(&self.up);
                 //
                 // self.forward = &self.forward * &r;
-            },
-            VirtualKeyCode::D => {
+            }
+            KeyCode::KeyD => {
                 // let r = Transform::rotation_matrix(&self.up, std::f32::consts::PI / 180.);
                 // let vec = self.forward.cross(&self.up);
                 // self.forward = &self.forward * &r;
-            },
-            _ => {},
+            }
+            _ => {}
         };
     }
 
-    fn calc_lrtbnf(half_fov_y_degree: f32, ratio: f32, n: f32, f: f32) -> (f32, f32, f32, f32, f32, f32) {
+    fn calc_lrtbnf(
+        half_fov_y_degree: f32,
+        ratio: f32,
+        n: f32,
+        f: f32,
+    ) -> (f32, f32, f32, f32, f32, f32) {
         let tan_y = ((half_fov_y_degree / 180.) * PI).tan();
         let y = ((n * tan_y) * 2.).abs();
         let x = y * ratio;
 
-        (-x/2., x/2., y/2., -y/2., n, f)
+        (-x / 2., x / 2., y / 2., -y / 2., n, f)
     }
 
     pub fn perspective_projection_mat_left_hand(fov_y: f32, ratio: f32, n: f32, z: f32) -> HMat {
@@ -117,34 +136,66 @@ impl Camera {
         // let fov_x = fov_y * ratio;
         let (l, r, t, b, n, f) = Camera::calc_lrtbnf(fov_y / 2., ratio, n, z);
 
-        let persp = HMat::from_vec(
-                         vec![
-                            n, 0., 0., 0.,
-                            0., n, 0., 0.,
-                            0., 0., n + f, 1.,
-                            0., 0., -n * f, 0.,
-                         ]);
+        let persp = HMat::from_vec(vec![
+            n,
+            0.,
+            0.,
+            0.,
+            0.,
+            n,
+            0.,
+            0.,
+            0.,
+            0.,
+            n + f,
+            1.,
+            0.,
+            0.,
+            -n * f,
+            0.,
+        ]);
 
         let ort_scale = HMat::from_vec(vec![
-                            2. / (r - l), 0., 0., 0.,
-                            0., 2. / (t - b), 0., 0.,
-                            0., 0., 2. / (f - n), 0.,
-                            0., 0., 0., 1.,
-                        ]);
+            2. / (r - l),
+            0.,
+            0.,
+            0.,
+            0.,
+            2. / (t - b),
+            0.,
+            0.,
+            0.,
+            0.,
+            2. / (f - n),
+            0.,
+            0.,
+            0.,
+            0.,
+            1.,
+        ]);
 
         let ort_translate = HMat::from_vec(vec![
-                            1., 0., 0.,0.,
-                            0., 1., 0., 0.,
-                            0., 0., 1., 0.,
-                            -(r + l) / 2., -(t + b) / 2., -(n + f) / 2., 1.,
-                        ]);
+            1.,
+            0.,
+            0.,
+            0.,
+            0.,
+            1.,
+            0.,
+            0.,
+            0.,
+            0.,
+            1.,
+            0.,
+            -(r + l) / 2.,
+            -(t + b) / 2.,
+            -(n + f) / 2.,
+            1.,
+        ]);
 
         let negative_z_matrix = HMat::from_vec(vec![
-                            1., 0., 0.,0.,
-                            0., 1., 0., 0.,
-                            0., 0., -1., 0.,
-                            0., 0., 0., 1.,
-                        ]);
+            1., 0., 0., 0., 0., 1., 0., 0., 0., 0., -1., 0., 0., 0., 0., 1.,
+        ]);
 
         negative_z_matrix * persp * ort_translate * ort_scale
         // ort_scale.t() * ort_translate.t() * persp.t()
@@ -156,38 +207,85 @@ impl Camera {
         // let fov_x = fov_y * ratio;
         let (l, r, t, b, n, f) = Camera::calc_lrtbnf(fov_y / 2., ratio, n, z);
 
-        let persp = HMat::from_vec(
-                         vec![
-                            n, 0., 0., 0.,
-                            0., n, 0., 0.,
-                            0., 0., n + f, 1.,
-                            0., 0., -n * f, 0.,
-                         ]);
+        let persp = HMat::from_vec(vec![
+            n,
+            0.,
+            0.,
+            0.,
+            0.,
+            n,
+            0.,
+            0.,
+            0.,
+            0.,
+            n + f,
+            1.,
+            0.,
+            0.,
+            -n * f,
+            0.,
+        ]);
 
         let ort_scale = HMat::from_vec(vec![
-                            2. / (r - l), 0., 0., 0.,
-                            0., 2. / (t - b), 0., 0.,
-                            0., 0., 2. / (n - f), 0.,
-                            0., 0., 0., 1.,
-                        ]);
+            2. / (r - l),
+            0.,
+            0.,
+            0.,
+            0.,
+            2. / (t - b),
+            0.,
+            0.,
+            0.,
+            0.,
+            2. / (n - f),
+            0.,
+            0.,
+            0.,
+            0.,
+            1.,
+        ]);
 
         let ort_translate = HMat::from_vec(vec![
-                            1., 0., 0.,0.,
-                            0., 1., 0., 0.,
-                            0., 0., 1., 0.,
-                            -(r + l) / 2., -(t + b) / 2., -(n + f) / 2., 1.,
-                        ]);
+            1.,
+            0.,
+            0.,
+            0.,
+            0.,
+            1.,
+            0.,
+            0.,
+            0.,
+            0.,
+            1.,
+            0.,
+            -(r + l) / 2.,
+            -(t + b) / 2.,
+            -(n + f) / 2.,
+            1.,
+        ]);
 
         persp * ort_translate * ort_scale
         // ort_scale.t() * ort_translate.t() * persp.t()
     }
 
-    pub fn to_view_matrix(&self) -> HMat{
+    pub fn to_view_matrix(&self) -> HMat {
         let t = HMat::from_vec(vec![
-            1., 0., 0., 0.,
-            0., 1., 0., 0.,
-            0., 0., 1., 0.,
-            -self.eye.x(), -self.eye.y(), -self.eye.z(), 1.,
+            1.,
+            0.,
+            0.,
+            0.,
+            0.,
+            1.,
+            0.,
+            0.,
+            0.,
+            0.,
+            1.,
+            0.,
+            -self.eye.x(),
+            -self.eye.y(),
+            -self.eye.z(),
+            1.,
         ]);
         //let g_t = self.forward.cross(&self.up);
 
@@ -198,7 +296,13 @@ impl Camera {
 
     #[profiling::function]
     //pub fn render(&self, width: u32, height: u32, object_buffer: &ObjectBuffer, view: &HMat) -> OutputBuffer {
-    pub fn render(&self, width: u32, height: u32, object_buffer: &ObjectBuffer, model: &HMat) -> OutputBuffer {
+    pub fn render(
+        &self,
+        width: u32,
+        height: u32,
+        object_buffer: &ObjectBuffer,
+        model: &HMat,
+    ) -> OutputBuffer {
         let mut _out = OutputBuffer::new(width, height, true);
 
         let view = self.to_view_matrix();
@@ -207,21 +311,27 @@ impl Camera {
 
         for _tri in object_buffer.iter() {
             let trans_poses = _tri.v.iter().map(|x| &x.to_homogeneous() * &mvp);
-            let trans_poses:Vec<Pos3> = trans_poses.map(|x| Pos3::from_matrix(&x)).collect();
-            for  pos in &trans_poses {
-                if pos.x() < -1. || pos.x() > 1. || pos.y() > 1. || pos.y() < -1.{
+            let trans_poses: Vec<Pos3> = trans_poses.map(|x| Pos3::from_matrix(&x)).collect();
+            for pos in &trans_poses {
+                if pos.x() < -1. || pos.x() > 1. || pos.y() > 1. || pos.y() < -1. {
                     println!("will return: {:?}", pos);
                     return _out;
                 }
             }
 
             let surface_tri_zero = Triangle::from_vec(
-                trans_poses.iter().map(|x| _out.pos_to_pixel_pos(&x)).collect()
-                );
+                trans_poses
+                    .iter()
+                    .map(|x| _out.pos_to_pixel_pos(&x))
+                    .collect(),
+            );
 
             let surface_tri_tilt = Triangle::from_vec(
-                trans_poses.iter().map(|x| _out.pos_to_pixel_pos_with_z(&x)).collect()
-                );
+                trans_poses
+                    .iter()
+                    .map(|x| _out.pos_to_pixel_pos_with_z(&x))
+                    .collect(),
+            );
 
             let (sx, ex, sy, ey) = surface_tri_zero.get_edge();
             let depth_matrix = surface_tri_tilt.get_depth_matrix();
@@ -230,9 +340,10 @@ impl Camera {
             // let ret = surface_tri_zero.in_triangle(&pos);
             // println!("ret is {:?}", ret);
             //
-            let _middle = Vector3::from_xyz(0.33,0.33,0.33);
+            let _middle = Vector3::from_xyz(0.33, 0.33, 0.33);
             for j in sy..ey {
-                if let Some((_sx, _ex)) = surface_tri_zero.get_horizon_edge(j as f32 + 0.5, sx, ex) {
+                if let Some((_sx, _ex)) = surface_tri_zero.get_horizon_edge(j as f32 + 0.5, sx, ex)
+                {
                     // println!("_sx:{:?}, {:?}", _sx, _ex);
                     for i in _sx..(_ex + 1) {
                         let pos = Pos3::from_xyz(i as f32 + 0.5, j as f32 + 0.5, 0.);
@@ -252,8 +363,13 @@ impl Camera {
         _out
     }
 
-
-    pub fn render_triangle_obejct(&self, width: u32, height: u32, triangle_res: &TriangleResources, model: &HMat) -> OutputBuffer {
+    pub fn render_triangle_obejct(
+        &self,
+        width: u32,
+        height: u32,
+        triangle_res: &TriangleResources,
+        model: &HMat,
+    ) -> OutputBuffer {
         let mut _out = OutputBuffer::new(width, height, false);
 
         let view = self.to_view_matrix();
@@ -266,40 +382,42 @@ impl Camera {
         let image = triangle_res.image.as_ref().unwrap();
 
         for _tri in triangle_res.iter() {
-            let trans_poses = _tri.v.iter()
+            let trans_poses = _tri
+                .v
+                .iter()
                 .map(|x| &x.to_homogeneous() * &mvp)
                 .map(|x| Pos3::from_matrix(&x));
 
             let mut is_continue = false;
-            for  pos in trans_poses.clone() {
-                if pos.x() < 0. || pos.x() > width as f32 || pos.y() > height as f32 || pos.y() < 0.{
+            for pos in trans_poses.clone() {
+                if pos.x() < 0. || pos.x() > width as f32 || pos.y() > height as f32 || pos.y() < 0.
+                {
                     is_continue = true;
-                    break
+                    break;
                 }
             }
             if is_continue {
-                continue
+                continue;
             }
 
             let surface_tri_zero = Triangle::from_vec(
-                trans_poses.clone().map(|x| Pos3::from_xyz(x.x(), x.y(), 0.0)).collect()
+                trans_poses
+                    .clone()
+                    .map(|x| Pos3::from_xyz(x.x(), x.y(), 0.0))
+                    .collect(),
             );
 
-            let surface_tri_tilt = Triangle::from_vec(
-                trans_poses.collect()
-            );
-
+            let surface_tri_tilt = Triangle::from_vec(trans_poses.collect());
 
             // println!("trans:{:?}", trans_poses);
             // println!("tilt:{:?}", surface_tri_tilt);
             // println!("view port: {:?}", trans_poses.iter().map(|x| &x.to_homogeneous() * &view_port).collect::<Vec<Matrix<1, 4>>>());
             // println!("test {:?}", surface_tri_tilt_test);
-            
 
             let (sx, ex, sy, ey) = surface_tri_zero.get_edge();
             let depth_matrix = surface_tri_tilt.get_depth_matrix();
 
-            let _middle = Vector3::from_xyz(0.33,0.33,0.33);
+            let _middle = Vector3::from_xyz(0.33, 0.33, 0.33);
 
             let rotate_origin_matrix = _tri.get_rotate_negative_z_matrix();
             let fix_matrix = match &mvp_1 {
@@ -307,15 +425,15 @@ impl Camera {
                 None => None,
             };
             let tri_origin_neg_z = Triangle::from_vec(
-                _tri
-                .v
-                .iter()
-                .map(|x| Pos3::from_matrix(&(&x.to_homogeneous() * &rotate_origin_matrix)))
-                .collect()
-                );
+                _tri.v
+                    .iter()
+                    .map(|x| Pos3::from_matrix(&(&x.to_homogeneous() * &rotate_origin_matrix)))
+                    .collect(),
+            );
 
             for j in sy..ey {
-                if let Some((_sx, _ex)) = surface_tri_zero.get_horizon_edge(j as f32 + 0.5, sx, ex) {
+                if let Some((_sx, _ex)) = surface_tri_zero.get_horizon_edge(j as f32 + 0.5, sx, ex)
+                {
                     // println!("_sx:{:?}, {:?}", _sx, _ex);
                     for i in _sx..(_ex + 1) {
                         let pos = Pos3::from_xyz(i as f32 + 0.5, j as f32 + 0.5, 0.);
@@ -324,10 +442,10 @@ impl Camera {
 
                         let bar = if let Some(_fix) = &fix_matrix {
                             let virtual_pos = Pos3::from_xyz(pos.x(), pos.y(), depth);
-                            let pos_origin = Pos3::from_matrix(&(&virtual_pos.to_homogeneous() * &_fix));
+                            let pos_origin =
+                                Pos3::from_matrix(&(&virtual_pos.to_homogeneous() * &_fix));
                             tri_origin_neg_z.barycentric_2d((pos_origin.x(), pos_origin.y()))
-                        }
-                        else {
+                        } else {
                             surface_tri_zero.barycentric_2d((pos.x(), pos.y()))
                         };
 
