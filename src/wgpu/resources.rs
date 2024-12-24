@@ -44,7 +44,7 @@ pub async fn load_model(
             ..Default::default()
         },
         |p| async move {
-            let p_file_name = file_path.clone().parent().unwrap().join(p);
+            let p_file_name = file_path.parent().unwrap().join(p);
             let mat_text = load_string(p_file_name.to_str().unwrap()).await.unwrap();
             tobj::load_mtl_buf(&mut BufReader::new(Cursor::new(mat_text)))
         },
@@ -54,7 +54,6 @@ pub async fn load_model(
     let mut materials = Vec::new();
     for m in obj_materials? {
         let texture_file_name = file_path
-            .clone()
             .parent()
             .unwrap()
             .join(&m.diffuse_texture.unwrap());

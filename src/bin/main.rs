@@ -1,10 +1,7 @@
 use std::fs::OpenOptions;
 
 use dognut::department::{
-    common::{
-        constant::{self, HEIGHT, WIDTH},
-        self_type,
-    },
+    common::constant::{self},
     pipeline::{rasterizer::RasterRunner, shader::LambertianShader},
     preview::vector::Vector3,
     tui::TuiApp,
@@ -14,7 +11,7 @@ use log::LevelFilter;
 
 use dognut::{department::view::camera::Camera, util::ARG};
 
-use log::{debug, error, info, warn};
+use log::{error, info};
 
 fn main() {
     let log_file = OpenOptions::new()

@@ -2,11 +2,9 @@ use std::f32::consts::PI;
 
 use cgmath::{InnerSpace, Rotation3};
 
-use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
-use winit::event::ElementState;
+use crossterm::event::{KeyCode, KeyEvent, KeyEventKind};
 
 use crate::wgpu::instance::Instance;
-use winit::keyboard::KeyCode as VirtualKeyCode;
 
 pub mod camera_controller;
 use log::info;

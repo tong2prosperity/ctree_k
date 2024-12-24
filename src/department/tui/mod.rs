@@ -19,7 +19,6 @@ use crate::department::{
     preview::{homo_transformation::HomoTransform, output_buffer::OutputBuffer, vector::Vector3},
     types::msg::TransferMsg,
 };
-use log::{error, info};
 
 pub mod term;
 

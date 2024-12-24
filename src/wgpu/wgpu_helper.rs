@@ -3,17 +3,9 @@ use std::iter;
 use cgmath::prelude::*;
 use pixels::wgpu;
 use pixels::wgpu::util::DeviceExt;
-use std::num::NonZeroU32;
 use winit::event::*;
 
-use crate::department::common::constant::{HEIGHT, WIDTH};
-use crate::department::preview::{position, vector};
-use crate::department::types::msg::TransferMsg;
-use crate::department::types::multi_sender::MultiSender;
-use crate::department::view::camera as dn_camera;
 use crate::department::view::camera_trait;
-use crossbeam_channel::Receiver;
-use lazy_static::lazy_static;
 use log::info;
 use std::time::Duration;
 use winit::dpi::{LogicalSize, PhysicalSize};
@@ -26,7 +18,6 @@ use model::{DrawModel, Vertex};
 
 use crate::wgpu::create_render_pipeline;
 use crate::wgpu::instance::{Instance, InstanceRaw};
-use crate::wgpu::light::LightUniform;
 
 use crate::department::control::camera_controller::CameraController;
 use crate::util::ARG;
@@ -382,7 +373,7 @@ where
 
             self.queue.submit(iter::once(encoder.finish()));
 
-            let mut tui_slice = tui_output_buffer.slice(..);
+            let tui_slice = tui_output_buffer.slice(..);
             // NOTE: We have to create the mapping THEN device.poll() before await
             // the future. Otherwise the application will freeze.
             let (tx, rx) = futures_intrusive::channel::shared::oneshot_channel();

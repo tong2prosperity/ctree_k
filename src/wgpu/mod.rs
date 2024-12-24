@@ -22,7 +22,7 @@ fn create_render_pipeline(
     let shader = device.create_shader_module(shader);
 
     device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some(debug_name.clone()),
+        label: Some(debug_name),
         layout: Some(layout),
         vertex: wgpu::VertexState {
             module: &shader,
