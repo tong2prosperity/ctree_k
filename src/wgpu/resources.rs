@@ -5,9 +5,16 @@ use pixels::wgpu::util::DeviceExt;
 
 use super::{model, texture};
 
-pub async fn load_string(file_name: &str) -> anyhow::Result<String> {
+pub async fn load_obj(file_name: &str) -> anyhow::Result<String> {
     let path = std::path::Path::new(file_name);
-    Ok(std::fs::read_to_string(path)?)
+
+    let obj_content = include_str!("../../res/merry_tree/tree3/ctree3.obj");
+    Ok(obj_content.to_string())
+}
+
+pub async fn load_mtl() -> anyhow::Result<String> {
+    let obj_content = include_str!("../../res/merry_tree/tree3/ctree3.mtl");
+    Ok(obj_content.to_string())
 }
 
 pub async fn load_binary(file_name: &str) -> anyhow::Result<Vec<u8>> {
@@ -20,8 +27,10 @@ pub async fn load_texture(
     device: &wgpu::Device,
     queue: &wgpu::Queue,
 ) -> anyhow::Result<texture::Texture> {
-    let data = load_binary(file_name).await?;
-    texture::Texture::from_bytes(device, queue, &data, file_name)
+    //let data = load_binary(file_name).await?;
+
+    let data = include_bytes!("../../res/merry_tree/tree3/deco0047.png");
+    texture::Texture::from_bytes(device, queue, data, file_name)
 }
 
 pub async fn load_model(
@@ -32,7 +41,7 @@ pub async fn load_model(
 ) -> anyhow::Result<model::Model> {
     let file_path = std::path::Path::new(file_name);
 
-    let obj_text = load_string(file_name).await?;
+    let obj_text = load_obj(file_name).await?;
     let obj_cursor = Cursor::new(obj_text);
     let mut obj_reader = BufReader::new(obj_cursor);
 
@@ -44,8 +53,7 @@ pub async fn load_model(
             ..Default::default()
         },
         |p| async move {
-            let p_file_name = file_path.parent().unwrap().join(p);
-            let mat_text = load_string(p_file_name.to_str().unwrap()).await.unwrap();
+            let mat_text = load_mtl().await.unwrap();
             tobj::load_mtl_buf(&mut BufReader::new(Cursor::new(mat_text)))
         },
     )

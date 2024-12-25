@@ -54,9 +54,6 @@ fn main() {
 
     let raster = RasterRunner::new(ms.clone(), camera, Box::new(shader), arg.term);
 
-    let res = dognut::department::model::object_loader::ObjectLoader::load_triangle_resources(
-        &arg.obj_path,
-    );
 
     let inner_rt = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
@@ -64,7 +61,7 @@ fn main() {
         .unwrap();
 
     inner_rt.block_on(async move {
-        let result = TuiApp::new(raster).run(res, None).await;
+        let result = TuiApp::new(raster).run(None).await;
         if let Err(e) = result {
             error!("tui return an error, {}", e.to_string());
         };

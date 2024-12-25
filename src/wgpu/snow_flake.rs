@@ -154,7 +154,6 @@ impl SnowfallSystem {
     pub fn update(&mut self, queue: &wgpu::Queue, dt: Duration) {
         let dt = dt.as_secs_f32();
 
-        // Generate new snowflakes
         if self.snowflakes.len() < self.max_snowflakes {
             let new_snowflake = SnowflakeInstance {
                 position: [
@@ -173,15 +172,13 @@ impl SnowfallSystem {
             self.snowflakes.push(new_snowflake);
         }
 
-        // Update existing snowflakes
         self.snowflakes.retain_mut(|snowflake| {
             snowflake.position[0] += snowflake.velocity[0] * dt;
             snowflake.position[1] += snowflake.velocity[1] * dt;
             snowflake.position[2] += snowflake.velocity[2] * dt;
-            snowflake.position[1] > -10.0 // Remove when below certain height
+            snowflake.position[1] > -10.0
         });
 
-        // Update instance buffer
         queue.write_buffer(
             &self.instance_buffer,
             0,
@@ -190,7 +187,6 @@ impl SnowfallSystem {
     }
 
     // pub fn update(&mut self, dt: f32) {
-    //     // 生成新的雪花
     //     if self.snowflakes.len() < self.max_snowflakes {
     //         let new_snowflake = SnowflakeInstance {
     //             position: Vector3::from_xyz(
@@ -209,10 +205,9 @@ impl SnowfallSystem {
     //         self.snowflakes.push(new_snowflake);
     //     }
 
-    //     // 更新现有雪花
     //     self.snowflakes.retain_mut(|snowflake| {
     //         snowflake.position = snowflake.position + snowflake.velocity * dt;
-    //         snowflake.position.y() > -10.0 // 当雪花落到底部时移除
+    //         snowflake.position.y() > -10.0
     //     });
     // }
 
@@ -231,12 +226,10 @@ impl SnowfallSystem {
     //     let num_snowflakes = 1000;
     // let mut snows = Vec::new();
     //         for _ in 0..num_snowflakes {
-    // // 生成随机位置和大小
     //             let x = rand::random::<f32>() * 2.0 - 1.0;
     // let y = rand::random::<f32>() * 2.0 - 1.0;
     // let z = rand::random::<f32>() * 2.0 - 1.0;
     //         snows.push(SnowflakeVertex { position: [x, y, z] });
-    //         // 根据需要添加更多顶点以形成雪花形状
     //     }
     //     let snow_vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
     //         label: Some("Vertex Buffer"),
@@ -283,7 +276,6 @@ impl SnowfallSystem {
 }
 
 fn create_snow_pipeline(device: &Device, shader: &wgpu::ShaderModule) -> wgpu::RenderPipeline {
-    // 创建相机绑定组布局
     let camera_bind_group_layout =
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {

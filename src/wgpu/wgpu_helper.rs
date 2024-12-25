@@ -559,9 +559,9 @@ where
                 &self.camera_bind_group,
                 //&self.light_bind_group,
             );
-
         }
-        self.snowfall_system.render(encoder, &view, &depth_texture.view, &self.camera_bind_group);
+        self.snowfall_system
+            .render(encoder, &view, &depth_texture.view, &self.camera_bind_group);
         (texture_desc, texture)
     }
 }

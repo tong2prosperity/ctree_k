@@ -128,7 +128,7 @@ impl<'a> OutputBuffer<'a> {
 
             x = n % self.width as usize;
             y = n / self.width as usize;
-            queue!(stdout, MoveTo(x as u16, y as u16));
+            queue!(stdout, MoveTo(x as u16, y as u16)).unwrap();
             queue!(
                 stdout,
                 style::PrintStyledContent(('*' as char).with(Color::Rgb {
@@ -136,7 +136,8 @@ impl<'a> OutputBuffer<'a> {
                     g: *g,
                     b: *b
                 }))
-            );
+            )
+            .unwrap();
         }
     }
 }

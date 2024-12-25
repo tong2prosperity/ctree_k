@@ -69,7 +69,6 @@ impl TuiApp {
 
     pub async fn run(
         mut self,
-        res: TriangleResources,
         state: Option<self_type::StateImp>,
     ) -> Result<(), Box<dyn Error>> {
         let _dimension = (256, 79);
@@ -128,31 +127,28 @@ impl TuiApp {
                                                 let (_stream, handle) =
                                                     rodio::OutputStream::try_default().unwrap();
                                                 let sink = rodio::Sink::try_new(&handle).unwrap();
-
-                                                let file = std::fs::File::open(
-                                                    "./res/music/christmas.mp3",
-                                                )
-                                                .unwrap();
-                                                let source = rodio::Decoder::new(
-                                                    std::io::BufReader::new(file),
-                                                )
-                                                .unwrap();
+                                                let music = include_bytes!(
+                                                    "../../../res/music/christmas.mp3"
+                                                );
+                                                let music_cursor = std::io::Cursor::new(music);
+                                                let source =
+                                                    rodio::Decoder::new(music_cursor).unwrap();
 
                                                 sink.append(source);
 
                                                 let mut stop_receiver = stop_rx;
-            
+
                                                 loop {
                                                     if sink.empty() {
                                                         break;
                                                     }
-                                                    
+
                                                     // 检查是否收到停止信号
                                                     if stop_receiver.try_recv().is_ok() {
                                                         sink.stop();
                                                         break;
                                                     }
-                                                    
+
                                                     // 短暂休眠以避免CPU过度使用
                                                     std::thread::sleep(Duration::from_millis(100));
                                                 }
@@ -181,7 +177,7 @@ impl TuiApp {
                     g.exit();
                 }
                 // execute!(g.game.stdout, terminal::Clear(ClearType::All));
-                g.game.draw((dimension.0 as u32, dimension.1 as u32), &res);
+                g.game.draw((dimension.0 as u32, dimension.1 as u32));
 
                 let st = TIME_STEP.as_secs_f64() - Time::now().sub(&g.current_instant());
                 if st > 0. {
@@ -201,7 +197,7 @@ impl TuiApp {
         }
     }
 
-    pub fn draw(&mut self, dim: (u32, u32), res: &TriangleResources) {
+    pub fn draw(&mut self, dim: (u32, u32)) {
         if let Some(ref mut gpu) = self.gpu {
             let mut out_buf = OutputBuffer::new(dim.0 as u32, dim.1 as u32, true);
             out_buf.stdout = Some(&mut self.stdout);
@@ -213,26 +209,6 @@ impl TuiApp {
             self.stdout.flush().unwrap();
             return;
         }
-
-        let now = std::time::Instant::now();
-        let mut out_buf = OutputBuffer::new(dim.0 as u32, dim.1 as u32, true);
-        out_buf.stdout = Some(&mut self.stdout);
-        self.raster.set_model(
-            HomoTransform::rotation_matrix(&Vector3::from_xyz(0., 1., 0.), self.theta)
-                * HomoTransform::scale((1.5, 1.5, 1.5)),
-        );
-        self.raster.render_frame(res, &mut out_buf);
-        out_buf.queue_to_stdout();
-        let data = out_buf.display.clone();
-        drop(out_buf);
-        self.stdout.flush().unwrap();
-
-        println!("this frame cost {} milli sec", now.elapsed().as_millis());
-        self.raster
-            .encoder_tx
-            .enc
-            .send(TransferMsg::RenderedData(data))
-            .unwrap();
     }
 }
 
